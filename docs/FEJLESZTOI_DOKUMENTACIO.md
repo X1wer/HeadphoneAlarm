@@ -1,0 +1,98 @@
+# FülesÉbresztő – fejlesztői dokumentáció
+
+Dátum: 2026. november 8. · Verzió: 1.0 (versionCode 1) · Build: debug
+
+## 1. A korábbi projekt átvizsgálása
+
+Átvizsgált csomag: `FulesEbreszto_Automatikus_APK_forditas(1).zip` (a `FulesEbreszto_Android_Projekt.zip` nem volt elérhető; a mellékelt `FulesEbreszto_telefonos_forditas.yml` ugyanezt a ZIP-et csomagolta ki és fordította).
+
+| Terület | Állapot a régi projektben | Döntés |
+|---|---|---|
+| Build | Nincs `gradlew`/`gradle-wrapper.jar`; AGP 8.7.3 + Kotlin 1.9.25; nem volt igazolva, hogy fordul | Új Gradle-projekt: AGP 9.4.1, Gradle 9.6.1 wrapperrel, version catalog |
+| UI | View-alapú, kódból épített `LinearLayout`-ok, nincs Compose / Material 3 / navigáció | Teljesen újraírva Compose + Material 3 + Navigation |
+| Adattárolás | `SharedPreferences` + kézi JSON | Room (eszközvédett tárhelyen) + DataStore |
+| Időzítés | `setAlarmClock` (jó), de nem volt elavult-trigger védelem, nem volt szundi-perzisztencia, újraindításkor a lejárt egyszeri ébresztés elveszett | Tiszta `NextTriggerCalculator` + `ReschedulePlanner` + `TriggerValidator`, késői/elmaradt ébresztés kezelése |
+| Hangkezelés | Jó alapötlet: `USAGE_MEDIA`, néma indítás, `setPreferredDevice`, `getRoutedDevice`-ellenőrzés, rezgéses tartalék, eszköz-callback | Az ötletet megtartottam, de újraírtam: tiszta, tesztelt szabályréteg (`OutputPolicy`, `AudioPathEvaluator`), `BECOMING_NOISY`, hangfókusz, hívás-mód, Android 13+ médiaútvonal-ellenőrzés, Android 16+ több-kimenetes útvonal, ellenőrzési türelmi idő, fade-in |
+| Állapotkezelés | Statikus `@Volatile` mezők a service-ben, 400 ms-os UI-pollozás | Központi `AlarmStateMachine`, `StateFlow` a UI felé |
+| Foreground service | `systemExempted` (helyes választás) | Megtartva, `mediaPlayback` tartaléktípussal |
+| Gesztusok | `dispatchTouchEvent`, 120 dp, 1,3× dominancia – nem volt egyszeri-művelet garancia | Tiszta `SwipeGestureDetector` + `OneShotAction`, animált visszajelzés, akadálymentes műveletek |
+| Tesztek | Nem voltak | 95 unit + 13 műszeres teszt |
+| Hang | `soft_alarm.wav` ismeretlen eredettel | Eltávolítva; 4 saját szintetizálású hang (`tools/generate_sounds.py`) |
+| Direct boot | Nem volt | Eszközvédett tárhely, `LOCKED_BOOT_COMPLETED`, `directBootAware` komponensek |
+
+## 2. Architektúra
+
+```
+ui/            Compose képernyők + ViewModel-ek (MVVM)
+  list/        főképernyő (AlarmListScreen/ViewModel)
+  edit/        szerkesztő, görgetős időválasztó
+  sounds/      hangválasztó, biztonságos tesztlejátszás (SoundPreview)
+  settings/    beállítások
+  ring/        AlarmActivity + AlarmRingScreen (teljes képernyő, gesztusok)
+alarm/         AlarmEngine (ütemezési koordinátor), AndroidAlarmClock (AlarmManager),
+               AlarmRingService (foreground), AlarmNotifications, Receivers, RingSessionState
+audio/         OutputPolicy + AudioPathEvaluator (tiszta szabályok), AudioDevices (platform-leképezés),
+               SafeHeadphonePlayer (végrehajtó), VibrationController, HeadphoneMonitor (UI)
+data/          Room (alarms, custom_sounds, known_devices), DataStore, DiagnosticLog
+domain/        Alarm, WeekDays, NextTriggerCalculator, ReschedulePlanner, TriggerValidator,
+               AlarmStateMachine, SwipeGestureDetector, Sounds, HuFormat, VolumeCurve
+```
+
+Elv: minden döntés tiszta Kotlinban (`domain`, `audio/OutputPolicy`), JVM-en tesztelve; az Android-osztályok csak végrehajtanak.
+
+### Csörgés folyamata
+
+1. `AlarmManager.setAlarmClock` → `AlarmReceiver` (indító wake lock) → `startForegroundService(AlarmRingService)` – az alarm-clock broadcastból engedélyezett háttérindítás.
+2. A service azonnal `startForeground` (típus: `systemExempted`; ha elutasítják: `mediaPlayback`), majd az `AlarmEngine.onTrigger` ellenőrzi és könyveli a triggert, és **azonnal ütemezi a következő ismétlést**.
+3. `RingSession` → `AlarmStateMachine.handle(Trigger)` → effektek: rezgés indul, UI, időkorlát, hangellenőrzés.
+4. `SafeHeadphonePlayer`: néma MediaPlayer a kiválasztott fejhallgatóra, útvonal-ellenőrzés, majd fade-in – vagy `Silent` állapot → rezgés.
+5. Leállítás/szundi (gesztus, gomb, értesítés) → állapotgép → effektek → `AlarmEngine.dismiss/snooze` → a service csak a perzisztálás után áll le.
+
+### Fontos tervezési döntések
+
+- **`USAGE_MEDIA` a `USAGE_ALARM` helyett**: a riasztás-hangfolyamot az Android fejhallgató mellett a hangszóróra is kiküldi.
+- **Rezgés már a hangellenőrzés alatt**: a felhasználó soha nem marad jelzés nélkül, ha az ellenőrzés elakad.
+- **Egyetlen döntéshozó** (`AlarmStateMachine`): nem lehet két lejátszó, leállítás utáni rezgés, dupla szundi.
+- **Ütemezési napló az adatbázisban** (`nextTriggerAt`, `lastTriggeredAt`, `snoozeUntil`): ebből állítható helyre minden boot / időváltás után; a `lastTriggeredAt` véd a visszaállított óra miatti újracsörgés ellen.
+- **Azonos időpontú ébresztések egy munkamenetben**: nincs két egymást követő csörgés.
+- **Boot után nincs foreground service**: a kis késéssel elmaradt ébresztést az AlarmManager 3 másodperc múlva újra kiváltja (Android 15+ szabálynak megfelelően).
+- **Bluetooth-jogosultság nélkül**: az eszközazonosítás `AudioDeviceInfo` alapján történik; ennek ára a gyengébb azonosítás (dokumentált kockázat).
+- **targetSdk 36 / compileSdk 37**: az API 37-re célzás háttér-audió szigorításait valódi eszközön kell majd ellenőrizni.
+
+## 3. Hibák, amelyeket a tesztelés tárt fel és javítottam
+
+| # | Hiba | Hogyan derült ki | Javítás |
+|---|---|---|---|
+| 1 | Az `AlarmEngine` csak akkor mentett, ha a tervező módosított valamit, így a szundi időpontja és az egyszeri ébresztés kikapcsolása nem került az adatbázisba (a szundi nem csörgött volna újra) | 2 unit teszt hibája (`AlarmEngineTest`) | `applyPlan` mindig perzisztál |
+| 2 | A teljes képernyős ébresztés nem jelent meg lezárt képernyőn: a `NotificationCompat.setSilent(true)` „csak összefoglaló riaszt” csoportba teszi az értesítést, ezért a rendszer elnyomta a full-screen intentet | Emulátoros teszt: a service futott és rezgett, de a képernyő sötét maradt | `setSilent` eltávolítva (a csatorna amúgy is hang és rezgés nélküli) |
+| 3 | Versenyhelyzet: a full-screen intent a munkamenet közzététele előtt nyithatja meg az ébresztőképernyőt, amely ekkor azonnal bezárult | Kódáttekintés a 2. hiba vizsgálatakor | A képernyő 5 s-ig vár a munkamenetre; a service triggerkor törli az előző, lezárt állapotot |
+| 4 | A Compose tesztkönyvtár által behúzott régi Espresso API 35+ alatt összeomlik | Műszeres tesztek | `espresso-core` 3.7.0 explicit függőség |
+| 5 | „Egyéb kimenet” fejhallgató-ikonnal jelent meg a beállításokban | Emulátoros képernyőkép | Csak valódi fejhallgató-típus kap fejhallgató-ikont |
+
+## 4. Függőségek (mind stabil kiadás, 2026. novemberi állapot)
+
+| Komponens | Verzió |
+|---|---|
+| Android Gradle Plugin | 9.4.1 |
+| Gradle | 9.6.1 |
+| Kotlin (+ Compose compiler plugin) | 2.4.21 |
+| KSP | 2.3.13 |
+| Compose BOM | 2026.09.00 |
+| Room | 2.8.5 |
+| DataStore Preferences | 1.2.1 |
+| Navigation Compose | 2.10.2 |
+| Lifecycle | 2.11.0 |
+| Activity Compose | 1.13.0 |
+| Core KTX | 1.19.1 |
+| kotlinx.coroutines | 1.11.0 |
+| material-icons-core | 1.7.8 |
+
+Licencek: Apache License 2.0 (AndroidX, Kotlin, coroutines). Tesztfüggőségek: JUnit 4.13.2 (EPL 1.0), AndroidX Test, Espresso 3.7.0.
+
+## 5. Hátralévő / javasolt munka
+
+1. **Fizikai teszt** valódi telefonon: Bluetooth A2DP és LE Audio fejhallgató, Bluetooth-hangszóró (elutasítás), vezetékes jack, USB-C fejhallgató; kihúzás és BT-megszakadás csörgés közben, hangszórós kiszivárgás mérése (pl. a telefon mellé tett hangmérővel).
+2. Release-aláírókulcs létrehozása és biztonságos tárolása (GitHub Secrets), release build R8-cal.
+3. targetSdk 37-re emelés valódi Android 17 készüléken végzett teszt után.
+4. Opcionális: `BLUETOOTH_CONNECT` kérése a pontosabb Bluetooth-eszközosztály (fejhallgató vs. hangszóró) megjelenítéséhez.
+5. A Material 3 „Beírás billentyűzettel” mód magyar feliratai a rendszer nyelvétől függenek; ha szükséges, saját időbeviteli mező.
