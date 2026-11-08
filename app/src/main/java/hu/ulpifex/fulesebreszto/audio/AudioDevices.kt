@@ -36,9 +36,9 @@ object AudioDevices {
     }
 
     fun toOutput(info: AudioDeviceInfo): OutputDevice {
-        val kind = kindOf(info.type)
-        val name = info.productName?.toString()?.takeIf { it.isNotBlank() } ?: kind.label
-        return OutputDevice(id = info.id, kind = kind, name = name, address = info.address.orEmpty())
+        // A blank name is shown as the translated device type by the UI.
+        val name = info.productName?.toString()?.trim().orEmpty()
+        return OutputDevice(id = info.id, kind = kindOf(info.type), name = name, address = info.address.orEmpty())
     }
 
     fun connectedOutputs(audioManager: AudioManager): List<Pair<OutputDevice, AudioDeviceInfo>> =

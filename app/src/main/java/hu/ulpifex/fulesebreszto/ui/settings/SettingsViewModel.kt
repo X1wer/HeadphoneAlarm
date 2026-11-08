@@ -10,7 +10,8 @@ import hu.ulpifex.fulesebreszto.data.AppSettings
 import hu.ulpifex.fulesebreszto.data.KnownDevice
 import hu.ulpifex.fulesebreszto.data.ThemeMode
 import hu.ulpifex.fulesebreszto.domain.BuiltInSounds
-import hu.ulpifex.fulesebreszto.domain.HuFormat
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import hu.ulpifex.fulesebreszto.ui.sounds.SoundPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -54,7 +55,7 @@ class SettingsViewModel(private val app: Application, private val c: AppContaine
 
     fun testVibration() {
         if (!vibration.hasVibrator) {
-            viewModelScope.launch { _messages.emit("Ezen a készüléken nincs rezgőmotor.") }
+            viewModelScope.launch { _messages.emit(c.localized().getString(R.string.msg_no_vibrator)) }
             return
         }
         vibration.testPulse()
@@ -63,7 +64,8 @@ class SettingsViewModel(private val app: Application, private val c: AppContaine
     fun testAlarm(minutes: Int) = viewModelScope.launch {
         val at = c.engine.scheduleTest(minutes)
         val time = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault())
-        _messages.emit("Próbaébresztés ${HuFormat.time(time.hour, time.minute)}-kor ($minutes perc múlva)")
+        val res = c.localized()
+        _messages.emit(res.getString(R.string.msg_test_alarm, AppLocale.timeFormat(res).time(time.hour, time.minute), minutes))
     }
 
     fun diagnostics(): List<String> = c.log.read()

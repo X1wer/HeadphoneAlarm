@@ -66,7 +66,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hu.ulpifex.fulesebreszto.alarm.FinishKind
 import hu.ulpifex.fulesebreszto.alarm.RingUiState
-import hu.ulpifex.fulesebreszto.domain.HuFormat
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.ui.rememberTimeFormat
+import hu.ulpifex.fulesebreszto.ui.ringStatusText
 import hu.ulpifex.fulesebreszto.domain.RingState
 import hu.ulpifex.fulesebreszto.domain.SwipeAction
 import hu.ulpifex.fulesebreszto.domain.SwipeGestureDetector
@@ -98,12 +103,19 @@ fun AlarmRingScreen(
     var feedback by remember { mutableStateOf<String?>(null) }
 
     val snoozeMinutes = ui?.snoozeMinutes ?: 10
+    val dismissedText = stringResource(R.string.ring_feedback_dismissed)
+    val snoozedText = stringResource(R.string.ring_feedback_snoozed, snoozeMinutes)
+    val timedOutText = stringResource(R.string.ring_feedback_timed_out)
+    val swipeDescription = stringResource(R.string.ring_swipe_cd)
+    val dismissLabel = stringResource(R.string.ring_dismiss)
+    val snoozeLabel = stringResource(R.string.ring_snooze)
+    val fmt = rememberTimeFormat()
 
     fun trigger(action: SwipeAction) {
         if (feedback != null) return
         feedback = when (action) {
-            SwipeAction.DISMISS -> "Ébresztés leállítva"
-            SwipeAction.SNOOZE -> "Szundi – $snoozeMinutes perc"
+            SwipeAction.DISMISS -> dismissedText
+            SwipeAction.SNOOZE -> snoozedText
         }
         onAction(action)
     }
@@ -113,9 +125,9 @@ fun AlarmRingScreen(
         val finished = ui?.finished
         if (finished != null && feedback == null) {
             feedback = when (finished) {
-                FinishKind.DISMISSED -> "Ébresztés leállítva"
-                FinishKind.SNOOZED -> "Szundi – $snoozeMinutes perc"
-                FinishKind.TIMED_OUT -> "Az ébresztés automatikusan leállt"
+                FinishKind.DISMISSED -> dismissedText
+                FinishKind.SNOOZED -> snoozedText
+                FinishKind.TIMED_OUT -> timedOutText
             }
         }
         if (finished != null || feedback != null) {
@@ -171,10 +183,10 @@ fun AlarmRingScreen(
                 }
             }
             .semantics {
-                contentDescription = "Ébresztés. Húzd felfelé a kikapcsoláshoz, lefelé a szundihoz."
+                contentDescription = swipeDescription
                 customActions = listOf(
-                    CustomAccessibilityAction("Leállítás") { trigger(SwipeAction.DISMISS); true },
-                    CustomAccessibilityAction("Szundi") { trigger(SwipeAction.SNOOZE); true },
+                    CustomAccessibilityAction(dismissLabel) { trigger(SwipeAction.DISMISS); true },
+                    CustomAccessibilityAction(snoozeLabel) { trigger(SwipeAction.SNOOZE); true },
                 )
             },
     ) {
@@ -185,15 +197,16 @@ fun AlarmRingScreen(
                 .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("ÉBRESZTÉS", color = Color(0xFF8BE3EE), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp)
+            Text(stringResource(R.string.ring_title), color = Color(0xFF8BE3EE), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp)
             Text(
-                HuFormat.time(now.hour, now.minute),
+                fmt.time(now.hour, now.minute),
                 color = Color.White,
                 fontSize = 84.sp,
                 fontWeight = FontWeight.Light,
             )
             Text(
-                ui?.label.orEmpty() + if ((ui?.extraAlarms ?: 0) > 0) "  (+${ui?.extraAlarms} további)" else "",
+                ui?.label.orEmpty() +
+                    if ((ui?.extraAlarms ?: 0) > 0) pluralStringResource(R.plurals.ring_extra, ui?.extraAlarms ?: 0, ui?.extraAlarms ?: 0) else "",
                 color = Color(0xFFE1E8EE),
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
@@ -211,7 +224,7 @@ fun AlarmRingScreen(
             ) {
                 DirectionHint(
                     up = true,
-                    text = "Húzd felfelé a kikapcsoláshoz",
+                    text = stringResource(R.string.ring_swipe_up),
                     active = hint == SwipeAction.DISMISS,
                     progress = if (hint == SwipeAction.DISMISS) progress else 0f,
                 )
@@ -234,7 +247,7 @@ fun AlarmRingScreen(
                 }
                 DirectionHint(
                     up = false,
-                    text = "Húzd lefelé a szundihoz ($snoozeMinutes perc)",
+                    text = stringResource(R.string.ring_swipe_down, snoozeMinutes),
                     active = hint == SwipeAction.SNOOZE,
                     progress = if (hint == SwipeAction.SNOOZE) progress else 0f,
                 )
@@ -247,7 +260,7 @@ fun AlarmRingScreen(
                 ) {
                     Icon(AppIcons.Snooze, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Szundi", fontSize = 18.sp)
+                    Text(snoozeLabel, fontSize = 18.sp)
                 }
                 Button(
                     onClick = { trigger(SwipeAction.DISMISS) },
@@ -256,7 +269,7 @@ fun AlarmRingScreen(
                 ) {
                     Icon(AppIcons.Stop, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Leállítás", fontSize = 18.sp)
+                    Text(dismissLabel, fontSize = 18.sp)
                 }
             }
         }
@@ -295,14 +308,14 @@ private fun AudioStatus(ui: RingUiState) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    ui.audioStatusText,
+                    ringStatusText(LocalContext.current, ui),
                     color = color,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
             if (ui.usedFallbackSound) {
-                Text("A választott hangfájl nem érhető el – beépített hang szól", color = Color(0xFFB7C6D1),
+                Text(stringResource(R.string.ring_fallback_sound), color = Color(0xFFB7C6D1),
                     style = MaterialTheme.typography.bodySmall)
             }
         }

@@ -1,5 +1,6 @@
 package hu.ulpifex.fulesebreszto.ui.settings
 
+import android.app.Activity
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,9 +58,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ulpifex.fulesebreszto.AppContainer
 import hu.ulpifex.fulesebreszto.BuildConfig
+import hu.ulpifex.fulesebreszto.R
 import hu.ulpifex.fulesebreszto.audio.OutputKind
 import hu.ulpifex.fulesebreszto.audio.OutputPolicy
 import hu.ulpifex.fulesebreszto.data.ThemeMode
+import hu.ulpifex.fulesebreszto.i18n.AppLanguage
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import hu.ulpifex.fulesebreszto.ui.PermissionStatus
 import hu.ulpifex.fulesebreszto.ui.Permissions
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
@@ -66,8 +71,10 @@ import hu.ulpifex.fulesebreszto.ui.components.HeadphoneStatusChip
 import hu.ulpifex.fulesebreszto.ui.components.SectionTitle
 import hu.ulpifex.fulesebreszto.ui.components.SettingsCard
 import hu.ulpifex.fulesebreszto.ui.components.StatusDot
+import hu.ulpifex.fulesebreszto.ui.deviceName
 import hu.ulpifex.fulesebreszto.ui.edit.CustomMinutesDialog
 import hu.ulpifex.fulesebreszto.ui.edit.MinutesDropdown
+import hu.ulpifex.fulesebreszto.ui.labelRes
 import hu.ulpifex.fulesebreszto.ui.theme.LocalStatusColors
 import kotlin.math.roundToInt
 
@@ -83,11 +90,15 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
     val preview by vm.preview.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var permissions by remember { mutableStateOf(PermissionStatus()) }
+    var language by remember { mutableStateOf(AppLocale.selected(context)) }
     var customSnooze by remember { mutableStateOf(false) }
     var customRing by remember { mutableStateOf(false) }
     var showLog by remember { mutableStateOf(false) }
 
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { permissions = Permissions.read(context, container) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        permissions = Permissions.read(context, container)
+        language = AppLocale.selected(context)
+    }
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
     DisposableEffect(Unit) { onDispose { vm.stopHeadphoneTest() } }
 
@@ -97,9 +108,11 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Beállítások") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Vissza") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
                 },
             )
         },
@@ -114,60 +127,56 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 .padding(bottom = 32.dp),
         ) {
             // ---- Audio output ----
-            SectionTitle("Hangkimenet")
+            SectionTitle(stringResource(R.string.section_audio_output))
             HeadphoneStatusChip(overview.status, Modifier.fillMaxWidth())
             Spacer(Modifier.padding(4.dp))
             SettingsCard {
-                val current = overview.strategy?.joinToString { "${it.name} (${it.kind.label})" }
+                val strategy = overview.strategy?.map { "${deviceName(it)} (${stringResource(it.kind.labelRes())})" }
                 ListItem(
-                    headlineContent = { Text("Aktuális médiakimenet") },
+                    headlineContent = { Text(stringResource(R.string.current_media_output)) },
                     supportingContent = {
-                        Text(current ?: "A rendszer ezen az Android-verzión nem adja meg (Android 13 alatt)")
+                        Text(strategy?.joinToString() ?: stringResource(R.string.current_output_unavailable))
                     },
                     colors = itemColors,
                 )
                 ListItem(
-                    headlineContent = { Text("Médiahangerő") },
+                    headlineContent = { Text(stringResource(R.string.media_volume)) },
                     supportingContent = {
                         val low = overview.mediaVolumePercent < 15
                         Text(
-                            "${overview.mediaVolumePercent}%" + if (low) " – túl alacsony, az ébresztés halk vagy néma lehet" else "",
+                            stringResource(if (low) R.string.media_volume_low else R.string.percent_value, overview.mediaVolumePercent),
                             color = if (low) LocalStatusColors.current.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     colors = itemColors,
                 )
                 ListItem(
-                    headlineContent = { Text("Kimenetváltozás figyelése") },
+                    headlineContent = { Text(stringResource(R.string.monitoring)) },
                     supportingContent = {
-                        Text(
-                            if (overview.monitoring) "Aktív – eseményalapú (AudioDeviceCallback, BECOMING_NOISY, útvonalváltás)"
-                            else "Indítás…",
-                        )
+                        Text(stringResource(if (overview.monitoring) R.string.monitoring_active else R.string.monitoring_starting))
                     },
                     leadingContent = { StatusDot(ok = overview.monitoring) },
                     colors = itemColors,
                 )
             }
 
-            SectionTitle("Csatlakoztatott kimenetek")
+            SectionTitle(stringResource(R.string.connected_outputs))
             SettingsCard {
                 if (overview.connected.isEmpty()) {
-                    ListItem(headlineContent = { Text("Nincs kimenet") }, colors = itemColors)
+                    ListItem(headlineContent = { Text(stringResource(R.string.no_outputs)) }, colors = itemColors)
                 }
                 overview.connected.forEach { device ->
                     val allowed = policy.isAllowed(device)
-                    ListItem(
-                        headlineContent = { Text(device.name) },
-                        supportingContent = {
-                            Text(
-                                device.kind.label + " · " + when {
-                                    allowed -> "ébresztésre engedélyezett"
-                                    device.kind.needsApproval -> "nincs engedélyezve"
-                                    else -> "ébresztéshez soha nem használt"
-                                },
-                            )
+                    val verdict = stringResource(
+                        when {
+                            allowed -> R.string.output_allowed
+                            device.kind.needsApproval -> R.string.output_not_allowed
+                            else -> R.string.output_never
                         },
+                    )
+                    ListItem(
+                        headlineContent = { Text(deviceName(device)) },
+                        supportingContent = { Text(stringResource(device.kind.labelRes()) + " · " + verdict) },
                         leadingContent = { Icon(iconFor(device.kind), contentDescription = null) },
                         trailingContent = { StatusDot(ok = allowed, warn = device.kind.needsApproval) },
                         colors = itemColors,
@@ -175,10 +184,9 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 }
             }
 
-            SectionTitle("Engedélyezett Bluetooth- és USB-eszközök")
+            SectionTitle(stringResource(R.string.allowed_devices_title))
             Text(
-                "A Bluetooth-kimenet lehet hangszóró vagy autós kihangosító is, ezért csak az itt bekapcsolt eszközökön szólhat ébresztés. " +
-                    "Vezetékes és USB-C fejhallgatók automatikusan engedélyezettek.",
+                stringResource(R.string.allowed_devices_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -186,20 +194,23 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
             SettingsCard {
                 if (known.isEmpty()) {
                     ListItem(
-                        headlineContent = { Text("Még nem csatlakozott Bluetooth- vagy USB-audioeszköz") },
-                        supportingContent = { Text("Csatlakoztasd a fejhallgatót, és itt megjelenik.") },
+                        headlineContent = { Text(stringResource(R.string.no_known_devices)) },
+                        supportingContent = { Text(stringResource(R.string.no_known_devices_hint)) },
                         colors = itemColors,
                     )
                 }
                 known.forEach { device ->
                     val connected = overview.connected.any { it.key == device.key }
                     val selectable = device.kind.needsApproval
+                    val name = device.name.ifBlank { stringResource(device.kind.labelRes()) }
+                    val allowDescription = stringResource(R.string.allow_device_cd, name)
                     ListItem(
-                        headlineContent = { Text(device.name) },
+                        headlineContent = { Text(name) },
                         supportingContent = {
                             Text(
-                                device.kind.label + " · " + (if (connected) "csatlakoztatva" else "nincs csatlakoztatva") +
-                                    if (!selectable) " · hangszóró, nem engedélyezhető" else "",
+                                stringResource(device.kind.labelRes()) + " · " +
+                                    stringResource(if (connected) R.string.connected else R.string.not_connected) +
+                                    if (!selectable) stringResource(R.string.speaker_cannot_allow) else "",
                             )
                         },
                         leadingContent = { Icon(iconFor(device.kind), contentDescription = null) },
@@ -209,10 +220,10 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                                     Switch(
                                         checked = device.allowed,
                                         onCheckedChange = { vm.setDeviceAllowed(device, it) },
-                                        modifier = Modifier.semantics { contentDescription = "${device.name} engedélyezése" },
+                                        modifier = Modifier.semantics { contentDescription = allowDescription },
                                     )
                                 }
-                                TextButton(onClick = { vm.forgetDevice(device) }) { Text("Törlés") }
+                                TextButton(onClick = { vm.forgetDevice(device) }) { Text(stringResource(R.string.forget)) }
                             }
                         },
                         colors = itemColors,
@@ -223,40 +234,41 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
             HeadphoneTestButton(preview.playingRef != null, preview.message, vm::testHeadphones, vm::stopHeadphoneTest)
 
             // ---- Alarm defaults ----
-            SectionTitle("Ébresztés – alapértékek új ébresztésekhez")
+            SectionTitle(stringResource(R.string.section_defaults))
             SettingsCard {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text("Alapértelmezett hangerő: ${settings.defaultVolume}%", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.default_volume, settings.defaultVolume), style = MaterialTheme.typography.bodyLarge)
                     var sliderValue by remember(settings.defaultVolume) { mutableFloatStateOf(settings.defaultVolume.toFloat()) }
+                    val sliderDescription = stringResource(R.string.default_volume_cd)
                     Slider(
                         value = sliderValue,
                         onValueChange = { sliderValue = it },
                         onValueChangeFinished = { vm.setDefaultVolume((sliderValue / 5f).roundToInt() * 5) },
                         valueRange = 0f..100f,
                         steps = 19,
-                        modifier = Modifier.semantics { contentDescription = "Alapértelmezett hangerő" },
+                        modifier = Modifier.semantics { contentDescription = sliderDescription },
                     )
                     Spacer(Modifier.padding(4.dp))
-                    MinutesDropdown("Alapértelmezett szundi", settings.defaultSnoozeMinutes, listOf(5, 10, 15),
+                    MinutesDropdown(stringResource(R.string.default_snooze), settings.defaultSnoozeMinutes, listOf(5, 10, 15),
                         vm::setDefaultSnooze) { customSnooze = true }
                     Spacer(Modifier.padding(4.dp))
-                    MinutesDropdown("Maximális ébresztési idő", settings.defaultMaxRingMinutes, listOf(1, 3, 5, 10, 15, 20, 30),
+                    MinutesDropdown(stringResource(R.string.max_ring), settings.defaultMaxRingMinutes, listOf(1, 3, 5, 10, 15, 20, 30),
                         vm::setDefaultMaxRing) { customRing = true }
                 }
                 ListItem(
-                    headlineContent = { Text("Rezgés fejhallgató mellett is") },
-                    supportingContent = { Text("Alapbeállítás új ébresztésekhez") },
+                    headlineContent = { Text(stringResource(R.string.vibrate_with_headphones)) },
+                    supportingContent = { Text(stringResource(R.string.default_vibrate_note)) },
                     trailingContent = { Switch(checked = settings.defaultVibrateWithHeadphones, onCheckedChange = vm::setDefaultVibrate) },
                     colors = itemColors,
                 )
             }
 
-            // ---- Appearance ----
-            SectionTitle("Megjelenés")
+            // ---- Appearance and language ----
+            SectionTitle(stringResource(R.string.section_appearance))
             SettingsCard {
                 ThemeMode.entries.forEach { mode ->
                     ListItem(
-                        headlineContent = { Text(mode.label) },
+                        headlineContent = { Text(stringResource(mode.labelRes())) },
                         leadingContent = { RadioButton(selected = settings.themeMode == mode, onClick = null) },
                         colors = itemColors,
                         modifier = Modifier.selectable(
@@ -268,67 +280,96 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
                 }
                 HorizontalDivider()
                 ListItem(
-                    headlineContent = { Text("24 órás időformátum") },
+                    headlineContent = { Text(stringResource(R.string.use_24h)) },
                     trailingContent = { Switch(checked = settings.use24h, onCheckedChange = vm::setUse24h) },
                     colors = itemColors,
                 )
             }
 
-            // ---- Permissions ----
-            SectionTitle("Rendszerjogosultságok")
+            SectionTitle(stringResource(R.string.language))
             SettingsCard {
-                PermissionRow("Pontos ébresztés", permissions.exactAlarms,
-                    "Szükséges a pontos időben történő megszólaláshoz.") { Permissions.open(context, Permissions.exactAlarmIntent(context)) }
-                PermissionRow("Értesítések", permissions.notifications,
-                    "Az ébresztés értesítése, leállítás és szundi gombok.") { Permissions.open(context, Permissions.notificationsIntent(context)) }
-                PermissionRow("Teljes képernyős ébresztés", permissions.fullScreen,
-                    "Lezárt képernyőn az ébresztőképernyő megjelenítése.") { Permissions.open(context, Permissions.fullScreenIntent(context)) }
-                PermissionRow("Rezgés", permissions.hasVibrator,
-                    if (permissions.hasVibrator) "Engedélyezve (telepítéskor megadott jogosultság)." else "A készüléken nincs rezgőmotor.",
-                    onOpen = null)
+                AppLanguage.entries.forEach { option ->
+                    ListItem(
+                        headlineContent = { Text(stringResource(option.labelRes())) },
+                        leadingContent = { RadioButton(selected = language == option, onClick = null) },
+                        colors = itemColors,
+                        modifier = Modifier.selectable(
+                            selected = language == option,
+                            role = Role.RadioButton,
+                            onClick = {
+                                if (language != option) {
+                                    language = option
+                                    (context as? Activity)?.let { AppLocale.select(it, option) }
+                                }
+                            },
+                        ),
+                    )
+                }
+            }
+
+            // ---- Permissions ----
+            SectionTitle(stringResource(R.string.section_permissions))
+            SettingsCard {
+                PermissionRow(stringResource(R.string.perm_exact), permissions.exactAlarms, stringResource(R.string.perm_exact_desc)) {
+                    Permissions.open(context, Permissions.exactAlarmIntent(context))
+                }
+                PermissionRow(stringResource(R.string.perm_notifications), permissions.notifications,
+                    stringResource(R.string.perm_notifications_desc)) {
+                    Permissions.open(context, Permissions.notificationsIntent(context))
+                }
+                PermissionRow(stringResource(R.string.perm_full_screen), permissions.fullScreen,
+                    stringResource(R.string.perm_full_screen_desc)) {
+                    Permissions.open(context, Permissions.fullScreenIntent(context))
+                }
                 PermissionRow(
-                    "Akkumulátor-optimalizálás",
+                    stringResource(R.string.perm_vibration),
+                    permissions.hasVibrator,
+                    stringResource(if (permissions.hasVibrator) R.string.perm_vibration_ok else R.string.perm_vibration_none),
+                    onOpen = null,
+                )
+                PermissionRow(
+                    stringResource(R.string.perm_battery),
                     permissions.batteryUnrestricted,
-                    if (permissions.batteryUnrestricted) "Nincs korlátozva." else
-                        "Az ébresztések pontos időzítésűek (setAlarmClock), így az optimalizálás általában nem akadályozza őket. " +
-                            "Egyes gyártói energiatakarékos módok mégis késleltethetnek – ilyenkor vedd ki az alkalmazást az optimalizálás alól.",
+                    stringResource(if (permissions.batteryUnrestricted) R.string.perm_battery_ok else R.string.perm_battery_note),
                     warnOnly = true,
                 ) { Permissions.open(context, Permissions.batteryIntent()) }
             }
 
             // ---- Testing ----
-            SectionTitle("Tesztelés")
+            SectionTitle(stringResource(R.string.section_testing))
             SettingsCard {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     HeadphoneTestButton(preview.playingRef != null, null, vm::testHeadphones, vm::stopHeadphoneTest)
                     OutlinedButton(onClick = vm::testVibration, modifier = Modifier.fillMaxWidth()) {
                         Icon(AppIcons.Vibration, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Rezgés tesztelése")
+                        Text(stringResource(R.string.test_vibration))
                     }
-                    OutlinedButton(onClick = { vm.testAlarm(1) }, modifier = Modifier.fillMaxWidth()) { Text("Próbaébresztés 1 perc múlva") }
-                    OutlinedButton(onClick = { vm.testAlarm(2) }, modifier = Modifier.fillMaxWidth()) { Text("Próbaébresztés 2 perc múlva") }
-                    TextButton(onClick = { showLog = true }, modifier = Modifier.fillMaxWidth()) { Text("Diagnosztikai napló (csak helyben)") }
+                    OutlinedButton(onClick = { vm.testAlarm(1) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.test_alarm_1))
+                    }
+                    OutlinedButton(onClick = { vm.testAlarm(2) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.test_alarm_2))
+                    }
+                    TextButton(onClick = { showLog = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.diagnostics))
+                    }
                 }
             }
 
             // ---- About ----
-            SectionTitle("Névjegy")
+            SectionTitle(stringResource(R.string.section_about))
             SettingsCard {
                 ListItem(
-                    headlineContent = { Text("FülesÉbresztő") },
+                    headlineContent = { Text(stringResource(R.string.app_name)) },
                     supportingContent = {
-                        Text("Verzió: ${BuildConfig.VERSION_NAME} (${BuildConfig.BUILD_TYPE} build, ${BuildConfig.VERSION_CODE}. kiadás)")
+                        Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TYPE, BuildConfig.VERSION_CODE))
                     },
                     leadingContent = { Icon(Icons.Filled.Info, contentDescription = null) },
                     colors = itemColors,
                 )
                 Text(
-                    "Az ébresztő hangja kizárólag engedélyezett, ellenőrzött fejhallgatón szólal meg. Ha a hangkimenet nem igazolható, " +
-                        "a telefon csak rezeg. Az alkalmazás teljesen offline működik: nincs internet-hozzáférése, reklámja, analitikája vagy fiókja.\n\n" +
-                        "Licencek: az alkalmazás forráskódja MIT-licences. Felhasznált könyvtárak: Android Jetpack (AndroidX, Jetpack Compose, " +
-                        "Material 3, Room, DataStore, Navigation) és Kotlin/kotlinx.coroutines – mind Apache License 2.0. " +
-                        "A beépített ébresztőhangokat a projekt saját szkriptje állítja elő (tools/generate_sounds.py), harmadik fél jogaitól mentesek.",
+                    stringResource(R.string.about_text),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -338,28 +379,30 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
     }
 
     if (customSnooze) {
-        CustomMinutesDialog("Egyéni szundi", settings.defaultSnoozeMinutes, 1..60,
+        CustomMinutesDialog(stringResource(R.string.custom_snooze_title), settings.defaultSnoozeMinutes, 1..60,
             onConfirm = { vm.setDefaultSnooze(it); customSnooze = false }, onDismiss = { customSnooze = false })
     }
     if (customRing) {
-        CustomMinutesDialog("Maximális ébresztési idő", settings.defaultMaxRingMinutes, 1..60,
+        CustomMinutesDialog(stringResource(R.string.max_ring), settings.defaultMaxRingMinutes, 1..60,
             onConfirm = { vm.setDefaultMaxRing(it); customRing = false }, onDismiss = { customRing = false })
     }
     if (showLog) {
         val lines = remember { vm.diagnostics() }
         AlertDialog(
             onDismissRequest = { showLog = false },
-            title = { Text("Diagnosztikai napló") },
+            title = { Text(stringResource(R.string.diagnostics_title)) },
             text = {
                 Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                     Text(
-                        if (lines.isEmpty()) "Üres." else lines.takeLast(150).joinToString("\n"),
+                        if (lines.isEmpty()) stringResource(R.string.diagnostics_empty) else lines.takeLast(150).joinToString("\n"),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
             },
-            confirmButton = { TextButton(onClick = { showLog = false }) { Text("Bezárás") } },
-            dismissButton = { TextButton(onClick = { vm.clearDiagnostics(); showLog = false }) { Text("Napló törlése") } },
+            confirmButton = { TextButton(onClick = { showLog = false }) { Text(stringResource(R.string.close)) } },
+            dismissButton = {
+                TextButton(onClick = { vm.clearDiagnostics(); showLog = false }) { Text(stringResource(R.string.diagnostics_clear)) }
+            },
         )
     }
 }
@@ -370,7 +413,7 @@ private fun HeadphoneTestButton(playing: Boolean, message: String?, onTest: () -
         FilledTonalButton(onClick = if (playing) onStop else onTest, modifier = Modifier.fillMaxWidth()) {
             Icon(AppIcons.Headphones, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text(if (playing) "Teszthang leállítása" else "Fejhallgatóhang tesztelése")
+            Text(stringResource(if (playing) R.string.stop_test else R.string.test_headphones))
         }
         if (message != null) {
             Text(message, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
@@ -391,7 +434,7 @@ private fun PermissionRow(
         supportingContent = { Text(detail) },
         leadingContent = { StatusDot(ok = granted, warn = warnOnly && !granted) },
         trailingContent = {
-            if (onOpen != null && !granted) TextButton(onClick = onOpen) { Text("Megnyitás") }
+            if (onOpen != null && !granted) TextButton(onClick = onOpen) { Text(stringResource(R.string.open)) }
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     )

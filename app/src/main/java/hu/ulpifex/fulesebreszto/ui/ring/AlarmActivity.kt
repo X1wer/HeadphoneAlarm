@@ -1,5 +1,6 @@
 package hu.ulpifex.fulesebreszto.ui.ring
 
+import android.content.Context
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -13,6 +14,7 @@ import hu.ulpifex.fulesebreszto.alarm.RingSessionState
 import hu.ulpifex.fulesebreszto.data.ThemeMode
 import hu.ulpifex.fulesebreszto.domain.OneShotAction
 import hu.ulpifex.fulesebreszto.domain.SwipeAction
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import hu.ulpifex.fulesebreszto.ui.theme.FulesTheme
 
 /**
@@ -23,6 +25,10 @@ import hu.ulpifex.fulesebreszto.ui.theme.FulesTheme
 class AlarmActivity : ComponentActivity() {
 
     private val action = OneShotAction()
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

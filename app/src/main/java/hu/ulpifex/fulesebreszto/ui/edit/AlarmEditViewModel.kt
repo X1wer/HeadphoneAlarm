@@ -2,10 +2,12 @@ package hu.ulpifex.fulesebreszto.ui.edit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.annotation.StringRes
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import hu.ulpifex.fulesebreszto.data.AppSettings
 import hu.ulpifex.fulesebreszto.domain.Alarm
-import hu.ulpifex.fulesebreszto.domain.HuFormat
 import hu.ulpifex.fulesebreszto.domain.NextTriggerCalculator
 import hu.ulpifex.fulesebreszto.domain.SoundRef
 import hu.ulpifex.fulesebreszto.domain.WeekDays
@@ -26,7 +28,7 @@ data class EditUiState(
     val isNew: Boolean = true,
     val draft: Alarm = Alarm(),
     val use24h: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     val saving: Boolean = false,
 )
 
@@ -57,7 +59,7 @@ class AlarmEditViewModel(private val c: AppContainer, private val alarmId: Long)
     }
 
     private fun newAlarm(s: AppSettings) = Alarm(
-        label = Alarm.DEFAULT_LABEL,
+        label = c.localized().getString(R.string.default_alarm_label),
         hour = 6,
         minute = 30,
         days = WeekDays.WORKDAYS,
@@ -90,12 +92,11 @@ class AlarmEditViewModel(private val c: AppContainer, private val alarmId: Long)
         return alarm.copy(days = days, oneShotDate = date)
     }
 
-    /** Preview line under the time picker ("8 óra 12 perc múlva"). */
-    fun previewText(draft: Alarm): String? {
+    /** When the draft would ring next, with the "now" it was computed for (preview line). */
+    fun previewNext(draft: Alarm): Pair<ZonedDateTime, ZonedDateTime>? {
         val now = ZonedDateTime.now(c.clock)
         val next = NextTriggerCalculator.next(draft.copy(lastTriggeredAt = null), now) ?: return null
-        return "Megszólal: ${HuFormat.relativeDayTime(next, now, _state.value.use24h)} · " +
-            HuFormat.countdown(now.toInstant().toEpochMilli(), next.toInstant().toEpochMilli())
+        return next to now
     }
 
     fun save() {
@@ -105,15 +106,17 @@ class AlarmEditViewModel(private val c: AppContainer, private val alarmId: Long)
             val date = draft.oneShotDate ?: LocalDate.now(c.clock)
             val at = ZonedDateTime.of(date, LocalTime.of(draft.hour, draft.minute), c.clock.zone)
             if (!at.toInstant().isAfter(c.clock.instant())) {
-                _state.update { it.copy(error = "A kiválasztott időpont már elmúlt – válassz későbbi dátumot vagy időt.") }
+                _state.update { it.copy(error = R.string.error_past) }
                 return
             }
         }
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             val (_, next) = c.engine.save(draft.copy(enabled = true))
-            val message = next?.let { "Az ébresztés ${HuFormat.countdown(System.currentTimeMillis(), it)} szól" }
-                ?: "Ébresztés mentve"
+            val res = c.localized()
+            val message = next?.let {
+                res.getString(R.string.msg_rings_in, AppLocale.timeFormat(res).countdown(System.currentTimeMillis(), it))
+            } ?: res.getString(R.string.msg_saved)
             _events.emit(EditEvent.Saved(message))
         }
     }

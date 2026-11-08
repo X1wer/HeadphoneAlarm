@@ -59,6 +59,14 @@ Elv: minden döntés tiszta Kotlinban (`domain`, `audio/OutputPolicy`), JVM-en t
 - **Bluetooth-jogosultság nélkül**: az eszközazonosítás `AudioDeviceInfo` alapján történik; ennek ára a gyengébb azonosítás (dokumentált kockázat).
 - **targetSdk 36 / compileSdk 37**: az API 37-re célzás háttér-audió szigorításait valódi eszközön kell majd ellenőrizni.
 
+## 2b. Többnyelvűség
+
+- Feliratok: `res/values/strings.xml` (angol, alapértelmezett – minden nem magyar nyelvű telefon ezt kapja) és `res/values-hu/strings.xml` (magyar). `localeFilters = en, hu`, így a könyvtárak (pl. Material 3 időválasztó) is csak ezen a két nyelven jelennek meg.
+- A `domain` és `audio` réteg nem tartalmaz feliratot: enumokat ad vissza (`SilentReason`, `UnverifiedReason`, `OutputKind`, `StatusIssue`), ezeket a `ui/Labels.kt` fordítja. A dátum-/időformázás (`TimeFormat`) tiszta Kotlin, mindkét nyelvre unit tesztelve.
+- Nyelvválasztás (`i18n/AppLocale`): Android 13+ esetén natív alkalmazásszintű nyelv (`LocaleManager`, `locales_config.xml`) – ez a háttérszolgáltatásra és az értesítésekre is érvényes. Android 10–12 esetén a választás eszközvédett SharedPreferences-ben tárolódik, az activityk és a service `attachBaseContext`-ben kapják meg, az értesítések és a ViewModel-üzenetek pedig `AppLocale.localized()`-on keresztül.
+- A motor által adott nevek (alapértelmezett „Ébresztés”/„Alarm”, „(másolat)”, „Próbaébresztés”) a mentés pillanatában aktuális nyelven jönnek létre; a beépített hangok neve mindig az aktuális nyelven jelenik meg (kulcs alapján).
+- App Bundle esetén a nyelvi felosztás ki van kapcsolva, hogy a nyelvváltáskor mindkét nyelv elérhető legyen.
+
 ## 3. Hibák, amelyeket a tesztelés tárt fel és javítottam
 
 | # | Hiba | Hogyan derült ki | Javítás |
@@ -68,6 +76,7 @@ Elv: minden döntés tiszta Kotlinban (`domain`, `audio/OutputPolicy`), JVM-en t
 | 3 | Versenyhelyzet: a full-screen intent a munkamenet közzététele előtt nyithatja meg az ébresztőképernyőt, amely ekkor azonnal bezárult | Kódáttekintés a 2. hiba vizsgálatakor | A képernyő 5 s-ig vár a munkamenetre; a service triggerkor törli az előző, lezárt állapotot |
 | 4 | A Compose tesztkönyvtár által behúzott régi Espresso API 35+ alatt összeomlik | Műszeres tesztek | `espresso-core` 3.7.0 explicit függőség |
 | 5 | „Egyéb kimenet” fejhallgató-ikonnal jelent meg a beállításokban | Emulátoros képernyőkép | Csak valódi fejhallgató-típus kap fejhallgató-ikont |
+| 6 | A `state_on`/`state_off` erőforrásnév ütközött a Compose privát erőforrásaival, és felülírta volna minden kapcsoló akadálymentes „be/ki” feliratát | Lint (`PrivateResource`) | Átnevezve `alarm_state_on`/`alarm_state_off`-ra |
 
 ## 4. Függőségek (mind stabil kiadás, 2026. novemberi állapot)
 
@@ -95,4 +104,4 @@ Licencek: Apache License 2.0 (AndroidX, Kotlin, coroutines). Tesztfüggőségek:
 2. Release-aláírókulcs létrehozása és biztonságos tárolása (GitHub Secrets), release build R8-cal.
 3. targetSdk 37-re emelés valódi Android 17 készüléken végzett teszt után.
 4. Opcionális: `BLUETOOTH_CONNECT` kérése a pontosabb Bluetooth-eszközosztály (fejhallgató vs. hangszóró) megjelenítéséhez.
-5. A Material 3 „Beírás billentyűzettel” mód magyar feliratai a rendszer nyelvétől függenek; ha szükséges, saját időbeviteli mező.
+5. Az Android 10–12-es nyelvváltási út kipróbálása valódi vagy emulált régebbi készüléken.

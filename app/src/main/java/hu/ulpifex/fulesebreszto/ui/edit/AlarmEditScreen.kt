@@ -65,7 +65,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ulpifex.fulesebreszto.AppContainer
 import hu.ulpifex.fulesebreszto.domain.Alarm
-import hu.ulpifex.fulesebreszto.domain.HuFormat
+import androidx.compose.ui.res.stringResource
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.ui.rememberTimeFormat
+import hu.ulpifex.fulesebreszto.ui.soundName
 import hu.ulpifex.fulesebreszto.domain.WeekDays
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
 import hu.ulpifex.fulesebreszto.ui.components.SectionTitle
@@ -92,6 +95,8 @@ fun AlarmEditScreen(
     val vm: AlarmEditViewModel = viewModel(key = "edit-$alarmId") { AlarmEditViewModel(container, alarmId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val draft = state.draft
+    val fmt = rememberTimeFormat()
+    val deletedMessage = stringResource(R.string.msg_deleted)
     var keyboardMode by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
@@ -108,7 +113,7 @@ fun AlarmEditScreen(
         vm.events.collect { event ->
             when (event) {
                 is EditEvent.Saved -> onDone(event.message)
-                EditEvent.Deleted -> onDone("Ébresztés törölve")
+                EditEvent.Deleted -> onDone(deletedMessage)
             }
         }
     }
@@ -116,14 +121,14 @@ fun AlarmEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ébresztés szerkesztése") },
+                title = { Text(stringResource(R.string.edit_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Vissza") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 actions = {
                     if (!state.isNew) {
                         IconButton(onClick = { showDelete = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Ébresztés törlése")
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete_alarm_cd))
                         }
                     }
                 },
@@ -139,7 +144,7 @@ fun AlarmEditScreen(
                         .navigationBarsPadding()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .height(56.dp),
-                ) { Text("Ébresztés mentése", style = MaterialTheme.typography.titleMedium) }
+                ) { Text(stringResource(R.string.save_alarm), style = MaterialTheme.typography.titleMedium) }
             }
         },
     ) { padding ->
@@ -165,74 +170,82 @@ fun AlarmEditScreen(
                 TextButton(onClick = { keyboardMode = !keyboardMode }) {
                     Icon(AppIcons.Keyboard, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(if (keyboardMode) "Görgetős választó" else "Beírás billentyűzettel")
+                    Text(stringResource(if (keyboardMode) R.string.wheel_mode else R.string.keyboard_mode))
                 }
             }
-            vm.previewText(draft)?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            vm.previewNext(draft)?.let { (next, now) ->
+                val preview = stringResource(
+                    R.string.preview_rings,
+                    fmt.relativeDayTime(next, now, state.use24h),
+                    fmt.countdown(now.toInstant().toEpochMilli(), next.toInstant().toEpochMilli()),
+                )
+                Text(preview, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp))
             }
             state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium,
+                Text(stringResource(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = 4.dp))
             }
 
             // B. Name
-            SectionTitle("Ébresztés neve")
+            SectionTitle(stringResource(R.string.section_name))
             OutlinedTextField(
                 value = draft.label,
                 onValueChange = vm::setLabel,
-                label = { Text("Ébresztés neve") },
+                label = { Text(stringResource(R.string.section_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             // C. Repeat
-            SectionTitle("Ismétlés")
+            SectionTitle(stringResource(R.string.section_repeat))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val selectedText = stringResource(R.string.day_selected)
+                val notSelectedText = stringResource(R.string.day_not_selected)
                 DayOfWeek.entries.forEach { day ->
                     val selected = day in draft.days
                     FilterChip(
                         selected = selected,
                         onClick = { vm.toggleDay(day) },
-                        label = { Text(HuFormat.shortDay(day)) },
+                        label = { Text(fmt.shortDay(day)) },
                         modifier = Modifier.semantics {
-                            contentDescription = HuFormat.longDay(day)
-                            stateDescription = if (selected) "kiválasztva" else "nincs kiválasztva"
+                            contentDescription = fmt.longDay(day)
+                            stateDescription = if (selected) selectedText else notSelectedText
                         },
                     )
                 }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { vm.setDays(WeekDays.WORKDAYS) }) { Text("Hétköznap") }
-                TextButton(onClick = { vm.setDays(WeekDays.WEEKEND) }) { Text("Hétvége") }
-                TextButton(onClick = { vm.setDays(WeekDays.EVERY_DAY) }) { Text("Minden nap") }
-                TextButton(onClick = { vm.setDays(WeekDays.NONE) }) { Text("Egyszeri") }
+                TextButton(onClick = { vm.setDays(WeekDays.WORKDAYS) }) { Text(stringResource(R.string.preset_weekdays)) }
+                TextButton(onClick = { vm.setDays(WeekDays.WEEKEND) }) { Text(stringResource(R.string.preset_weekend)) }
+                TextButton(onClick = { vm.setDays(WeekDays.EVERY_DAY) }) { Text(stringResource(R.string.preset_every_day)) }
+                TextButton(onClick = { vm.setDays(WeekDays.NONE) }) { Text(stringResource(R.string.preset_once)) }
             }
             if (draft.days.isEmpty) {
                 ListItem(
-                    headlineContent = { Text("Egyszeri ébresztés") },
-                    supportingContent = { Text(draft.oneShotDate?.let(HuFormat::date) ?: "Dátum kiválasztása") },
+                    headlineContent = { Text(stringResource(R.string.one_shot_title)) },
+                    supportingContent = { Text(draft.oneShotDate?.let(fmt::date) ?: stringResource(R.string.choose_date)) },
                     leadingContent = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                    trailingContent = { TextButton(onClick = { showDatePicker = true }) { Text("Dátum") } },
+                    trailingContent = { TextButton(onClick = { showDatePicker = true }) { Text(stringResource(R.string.date_button)) } },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     modifier = Modifier.clickable { showDatePicker = true },
                 )
             }
 
             // D. Sound
-            SectionTitle("Ébresztőhang")
+            SectionTitle(stringResource(R.string.section_sound))
             ListItem(
-                headlineContent = { Text("Ébresztőhang kiválasztása") },
-                supportingContent = { Text(draft.soundName) },
+                headlineContent = { Text(stringResource(R.string.choose_sound)) },
+                supportingContent = { Text(soundName(draft)) },
                 leadingContent = { Icon(AppIcons.Headphones, contentDescription = null) },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                modifier = Modifier.clickable(onClickLabel = "Hangválasztó megnyitása") { onPickSound(draft.sound.serialized) },
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.open_sound_picker)) { onPickSound(draft.sound.serialized) },
             )
 
             // E. Volume
-            SectionTitle("Hangerő")
+            SectionTitle(stringResource(R.string.section_volume))
+            val volumeDescription = stringResource(R.string.volume_cd)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Slider(
                     value = draft.volumePercent.toFloat(),
@@ -241,26 +254,26 @@ fun AlarmEditScreen(
                     steps = 19,
                     modifier = Modifier
                         .weight(1f)
-                        .semantics { contentDescription = "Ébresztés hangereje" },
+                        .semantics { contentDescription = volumeDescription },
                 )
                 Spacer(Modifier.width(12.dp))
-                Text("${draft.volumePercent}%", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp))
+                Text(stringResource(R.string.percent_value, draft.volumePercent), style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(56.dp))
             }
             if (draft.volumePercent == 0) {
-                Text("0% hangerőnél az ébresztés csak rezegni fog.", color = LocalStatusColors.current.warning,
+                Text(stringResource(R.string.volume_zero_warning), color = LocalStatusColors.current.warning,
                     style = MaterialTheme.typography.bodySmall)
             }
             Text(
-                "A hangerő a lejátszó saját hangerejét állítja, a telefon rendszerhangerejét nem módosítja.",
+                stringResource(R.string.volume_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             // F. Vibration
-            SectionTitle("Rezgés")
+            SectionTitle(stringResource(R.string.section_vibration))
             ListItem(
-                headlineContent = { Text("Rezgés fejhallgató mellett is") },
-                supportingContent = { Text("Fejhallgató nélkül az ébresztés mindig rezeg.") },
+                headlineContent = { Text(stringResource(R.string.vibrate_with_headphones)) },
+                supportingContent = { Text(stringResource(R.string.vibrate_note)) },
                 leadingContent = { Icon(AppIcons.Vibration, contentDescription = null) },
                 trailingContent = {
                     Switch(checked = draft.vibrateWithHeadphones, onCheckedChange = vm::setVibrateWithHeadphones)
@@ -269,9 +282,9 @@ fun AlarmEditScreen(
             )
 
             // G. Snooze
-            SectionTitle("Szundi")
+            SectionTitle(stringResource(R.string.section_snooze))
             MinutesDropdown(
-                title = "Szundi időtartama",
+                title = stringResource(R.string.snooze_duration),
                 value = draft.snoozeMinutes,
                 presets = SNOOZE_PRESETS,
                 onSelect = vm::setSnooze,
@@ -279,9 +292,9 @@ fun AlarmEditScreen(
             )
 
             // H. Max duration
-            SectionTitle("Ébresztés maximális időtartama")
+            SectionTitle(stringResource(R.string.section_max))
             MinutesDropdown(
-                title = "Ennyi idő után automatikusan leáll",
+                title = stringResource(R.string.max_note),
                 value = draft.maxRingMinutes,
                 presets = RING_PRESETS,
                 onSelect = vm::setMaxRing,
@@ -299,14 +312,14 @@ fun AlarmEditScreen(
         )
     }
     if (showDelete) {
-        DeleteAlarmDialog(draft, state.use24h, onConfirm = { showDelete = false; vm.delete() }, onDismiss = { showDelete = false })
+        DeleteAlarmDialog(draft, state.use24h, fmt, onConfirm = { showDelete = false; vm.delete() }, onDismiss = { showDelete = false })
     }
     if (customSnooze) {
-        CustomMinutesDialog("Egyéni szundi", draft.snoozeMinutes, Alarm.MIN_SNOOZE..Alarm.MAX_SNOOZE,
+        CustomMinutesDialog(stringResource(R.string.custom_snooze_title), draft.snoozeMinutes, Alarm.MIN_SNOOZE..Alarm.MAX_SNOOZE,
             onConfirm = { vm.setSnooze(it); customSnooze = false }, onDismiss = { customSnooze = false })
     }
     if (customRing) {
-        CustomMinutesDialog("Egyéni maximális időtartam", draft.maxRingMinutes, Alarm.MIN_RING..Alarm.MAX_RING,
+        CustomMinutesDialog(stringResource(R.string.custom_max_title), draft.maxRingMinutes, Alarm.MIN_RING..Alarm.MAX_RING,
             onConfirm = { vm.setMaxRing(it); customRing = false }, onDismiss = { customRing = false })
     }
 }
@@ -318,15 +331,18 @@ fun MinutesDropdown(title: String, value: Int, presets: List<Int>, onSelect: (In
         OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$value perc" + if (value !in presets) " (egyéni)" else "", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(if (value in presets) R.string.minutes_value else R.string.minutes_value_custom, value),
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
             Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             presets.forEach { minutes ->
-                DropdownMenuItem(text = { Text("$minutes perc") }, onClick = { open = false; onSelect(minutes) })
+                DropdownMenuItem(text = { Text(stringResource(R.string.minutes_value, minutes)) }, onClick = { open = false; onSelect(minutes) })
             }
-            DropdownMenuItem(text = { Text("Egyéni érték…") }, onClick = { open = false; onCustom() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.custom_value)) }, onClick = { open = false; onCustom() })
         }
     }
 }
@@ -343,14 +359,14 @@ fun CustomMinutesDialog(title: String, initial: Int, range: IntRange, onConfirm:
             OutlinedTextField(
                 value = text,
                 onValueChange = { new -> text = new.filter(Char::isDigit).take(2) },
-                label = { Text("Perc (${range.first}–${range.last})") },
+                label = { Text(stringResource(R.string.minutes_range_label, range.first, range.last)) },
                 singleLine = true,
                 isError = !valid,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
         },
-        confirmButton = { TextButton(onClick = { value?.let(onConfirm) }, enabled = valid) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },
+        confirmButton = { TextButton(onClick = { value?.let(onConfirm) }, enabled = valid) { Text(stringResource(R.string.ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -369,9 +385,11 @@ private fun OneShotDateDialog(initial: LocalDate, onPick: (LocalDate) -> Unit, o
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = { state.selectedDateMillis?.let { onPick(LocalDate.ofEpochDay(it / dayMs)) } }) { Text("OK") }
+            TextButton(onClick = { state.selectedDateMillis?.let { onPick(LocalDate.ofEpochDay(it / dayMs)) } }) {
+                Text(stringResource(R.string.ok))
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     ) {
         DatePicker(state = state)
     }

@@ -3,6 +3,7 @@ package hu.ulpifex.fulesebreszto
 import android.app.Application
 import android.content.Context
 import hu.ulpifex.fulesebreszto.alarm.AlarmEngine
+import hu.ulpifex.fulesebreszto.alarm.EngineLabels
 import hu.ulpifex.fulesebreszto.alarm.AlarmNotifications
 import hu.ulpifex.fulesebreszto.alarm.AndroidAlarmClock
 import hu.ulpifex.fulesebreszto.audio.HeadphoneMonitor
@@ -12,6 +13,7 @@ import hu.ulpifex.fulesebreszto.data.DeviceRepository
 import hu.ulpifex.fulesebreszto.data.DiagnosticLog
 import hu.ulpifex.fulesebreszto.data.SettingsRepository
 import hu.ulpifex.fulesebreszto.data.db.AppDatabase
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,7 +34,11 @@ class FulesApp : Application() {
 
 /** Manual dependency container; everything persistent lives in device-protected storage. */
 class AppContainer(app: Context) {
+    val appContext: Context = app
     private val storage: Context = app.createDeviceProtectedStorageContext()
+
+    /** Resources in the app language (may differ from the system language on Android 10–12). */
+    fun localized(): Context = AppLocale.localized(appContext)
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val clock: Clock = LiveZoneClock
@@ -52,6 +58,14 @@ class AppContainer(app: Context) {
         notifier = notifications,
         clock = clock,
         settings = { settings.current() },
+        labels = {
+            val res = localized()
+            EngineLabels(
+                defaultLabel = res.getString(R.string.default_alarm_label),
+                copySuffix = res.getString(R.string.copy_suffix),
+                testLabel = res.getString(R.string.test_alarm_label),
+            )
+        },
         log = log::log,
     )
 }

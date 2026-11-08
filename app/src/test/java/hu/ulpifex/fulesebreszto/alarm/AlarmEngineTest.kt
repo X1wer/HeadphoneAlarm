@@ -68,7 +68,11 @@ class AlarmEngineTest {
     private val store = FakeStore()
     private val gateway = FakeGateway()
     private val notifier = FakeNotifier()
-    private val engine = AlarmEngine(store, gateway, notifier, clock, settings = { AppSettings() })
+    private val engine = AlarmEngine(
+        store, gateway, notifier, clock,
+        settings = { AppSettings() },
+        labels = { EngineLabels(defaultLabel = "Ébresztés", copySuffix = "(másolat)", testLabel = "Próbaébresztés") },
+    )
 
     private val workday0630 = Alarm(label = "Munkahelyi ébresztés", hour = 6, minute = 30, days = WeekDays.WORKDAYS, enabled = true)
 
@@ -258,7 +262,7 @@ class AlarmEngineTest {
         assertEquals(Alarm.MIN_SNOOZE, saved.snoozeMinutes)
         assertEquals(100, saved.volumePercent)
         assertEquals(Alarm.MAX_RING, saved.maxRingMinutes)
-        assertEquals(Alarm.DEFAULT_LABEL, saved.label)
+        assertEquals("Ébresztés", saved.label)
     }
 
     @Test

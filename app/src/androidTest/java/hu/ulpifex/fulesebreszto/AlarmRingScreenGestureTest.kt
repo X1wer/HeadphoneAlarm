@@ -11,6 +11,7 @@ import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import hu.ulpifex.fulesebreszto.alarm.RingUiState
 import hu.ulpifex.fulesebreszto.domain.RingState
 import hu.ulpifex.fulesebreszto.domain.SilentReason
@@ -29,6 +30,8 @@ class AlarmRingScreenGestureTest {
     val compose = createComposeRule()
 
     private val actions = mutableListOf<SwipeAction>()
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private fun text(id: Int, vararg args: Any) = context.getString(id, *args)
 
     private val ui = RingUiState(
         alarmIds = listOf(1),
@@ -52,7 +55,7 @@ class AlarmRingScreenGestureTest {
         compose.onNodeWithTag("ringRoot").performTouchInput { swipeUp(startY = bottom * 0.75f, endY = bottom * 0.25f) }
         compose.waitForIdle()
         assertEquals(listOf(SwipeAction.DISMISS), actions)
-        compose.onNodeWithText("Ébresztés leállítva").assertExists()
+        compose.onNodeWithText(text(R.string.ring_feedback_dismissed)).assertExists()
         // A second gesture is ignored by the screen (one action per ringing screen).
         compose.onNodeWithTag("ringRoot").performTouchInput { swipeDown(startY = bottom * 0.25f, endY = bottom * 0.75f) }
         compose.waitForIdle()
@@ -65,7 +68,7 @@ class AlarmRingScreenGestureTest {
         compose.onNodeWithTag("ringRoot").performTouchInput { swipeDown(startY = bottom * 0.3f, endY = bottom * 0.8f) }
         compose.waitForIdle()
         assertEquals(listOf(SwipeAction.SNOOZE), actions)
-        compose.onNodeWithText("Szundi – 10 perc").assertExists()
+        compose.onNodeWithText(text(R.string.ring_feedback_snoozed, 10)).assertExists()
     }
 
     @Test
@@ -88,7 +91,7 @@ class AlarmRingScreenGestureTest {
     @Test
     fun buttonsAndAccessibilityActionsWork() {
         show()
-        compose.onNodeWithText("Leállítás").performClick()
+        compose.onNodeWithText(text(R.string.ring_dismiss)).performClick()
         compose.waitForIdle()
         assertEquals(listOf(SwipeAction.DISMISS), actions)
     }
@@ -97,7 +100,7 @@ class AlarmRingScreenGestureTest {
     fun accessibilityCustomActionSnoozes() {
         show()
         val customActions = compose.onNodeWithTag("ringRoot").fetchSemanticsNode().config[SemanticsActions.CustomActions]
-        compose.runOnIdle { customActions.first { it.label == "Szundi" }.action() }
+        compose.runOnIdle { customActions.first { it.label == text(R.string.ring_snooze) }.action() }
         compose.waitForIdle()
         assertEquals(listOf(SwipeAction.SNOOZE), actions)
     }

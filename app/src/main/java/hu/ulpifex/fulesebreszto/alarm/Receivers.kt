@@ -31,7 +31,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 } catch (e: Exception) {
                     app.container.log.log("ring service start failed: ${e.javaClass.simpleName}")
                     StartupWakeLock.release()
-                    app.container.notifications.failedToStart("Ébresztés")
+                    app.container.notifications.failedToStart()
                 }
             }
 

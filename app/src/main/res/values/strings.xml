@@ -1,4 +1,273 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- English (default). Hungarian lives in values-hu/strings.xml. -->
 <resources>
-    <string name="app_name">FülesÉbresztő</string>
+    <string name="app_name" translatable="false">FülesÉbresztő</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
+    <string name="open">Open</string>
+    <string name="copy">Copy</string>
+    <string name="settings">Settings</string>
+    <string name="unknown">unknown</string>
+    <string name="minutes_value">%1$d min</string>
+    <string name="minutes_value_custom">%1$d min (custom)</string>
+    <string name="custom_value">Custom value…</string>
+    <string name="minutes_range_label">Minutes (%1$d–%2$d)</string>
+    <string name="percent_value">%1$d%%</string>
+
+    <!-- Headphone status line -->
+    <string name="status_connected">Headphones connected</string>
+    <string name="status_connected_named">Headphones connected · %1$s</string>
+    <string name="status_none">No headphones – alarms will only vibrate</string>
+    <string name="status_check">Audio output needs checking</string>
+    <string name="status_issue_volume_zero">Media volume is 0 – the alarm will not be audible</string>
+    <string name="status_issue_not_allowed">“%1$s” is not allowed – you can allow it in Settings</string>
+
+    <!-- Alarm list -->
+    <string name="new_alarm">New alarm</string>
+    <string name="no_alarms">No alarms yet. Tap “New alarm” to create one.</string>
+    <string name="next_none">No alarm is switched on.</string>
+    <string name="next_alarm">Next alarm: %1$s</string>
+    <string name="next_alarm_snooze">Next alarm (snooze): %1$s</string>
+    <string name="missing_permissions">Missing permission: %1$s</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_copy_or_delete">Copy or delete</string>
+    <string name="alarm_state_on">On</string>
+    <string name="alarm_state_off">Off</string>
+    <string name="snoozing">Snoozing</string>
+    <string name="headphone_alarm_sound">Headphone alarm · %1$s</string>
+    <string name="toggle_alarm_cd">Switch on %1$s %2$s</string>
+    <string name="delete_title">Delete this alarm?</string>
+    <string name="delete_text">%1$s – %2$s\nThis cannot be undone.</string>
+    <string name="msg_rings_in">Alarm rings %1$s</string>
+    <string name="msg_copy_created">Copy created (switched off)</string>
+    <string name="msg_deleted">Alarm deleted</string>
+    <string name="msg_saved">Alarm saved</string>
+
+    <!-- Alarm editor -->
+    <string name="edit_title">Edit alarm</string>
+    <string name="delete_alarm_cd">Delete alarm</string>
+    <string name="save_alarm">Save alarm</string>
+    <string name="wheel_mode">Scroll wheels</string>
+    <string name="keyboard_mode">Type with keyboard</string>
+    <string name="preview_rings">Rings: %1$s · %2$s</string>
+    <string name="error_past">The selected time has already passed – choose a later date or time.</string>
+    <string name="section_name">Alarm name</string>
+    <string name="section_repeat">Repeat</string>
+    <string name="day_selected">selected</string>
+    <string name="day_not_selected">not selected</string>
+    <string name="preset_weekdays">Weekdays</string>
+    <string name="preset_weekend">Weekend</string>
+    <string name="preset_every_day">Every day</string>
+    <string name="preset_once">Once</string>
+    <string name="one_shot_title">One-time alarm</string>
+    <string name="choose_date">Choose a date</string>
+    <string name="date_button">Date</string>
+    <string name="section_sound">Alarm sound</string>
+    <string name="choose_sound">Choose alarm sound</string>
+    <string name="open_sound_picker">Open sound picker</string>
+    <string name="section_volume">Volume</string>
+    <string name="volume_cd">Alarm volume</string>
+    <string name="volume_zero_warning" formatted="false">At 0% volume the alarm will only vibrate.</string>
+    <string name="volume_note">This sets the player\'s own volume; the phone\'s system volume is not changed.</string>
+    <string name="section_vibration">Vibration</string>
+    <string name="vibrate_with_headphones">Vibrate with headphones too</string>
+    <string name="vibrate_note">Without headphones the alarm always vibrates.</string>
+    <string name="section_snooze">Snooze</string>
+    <string name="snooze_duration">Snooze length</string>
+    <string name="section_max">Maximum alarm duration</string>
+    <string name="max_note">Stops automatically after</string>
+    <string name="custom_snooze_title">Custom snooze</string>
+    <string name="custom_max_title">Custom maximum duration</string>
+    <string name="wheel_hour">Hour</string>
+    <string name="wheel_minute">Minute</string>
+    <string name="wheel_increase">Increase</string>
+    <string name="wheel_decrease">Decrease</string>
+    <string name="wheel_cd">%1$s: %2$d</string>
+
+    <!-- Sound picker -->
+    <string name="sounds_title">Alarm sounds</string>
+    <string name="builtin_sounds">Built-in sounds</string>
+    <string name="custom_sounds">Your sound files</string>
+    <string name="add_sound_file">Add sound file</string>
+    <string name="formats_note">Supported formats: MP3, WAV, OGG, M4A and anything this device can decode. The file stays on the phone and is never uploaded.</string>
+    <string name="no_custom_sounds">No sound files yet.</string>
+    <string name="preview_note">Test playback only plays on verified, allowed headphones – never on the phone speaker.</string>
+    <string name="stop_preview_cd">Stop test playback of %1$s</string>
+    <string name="play_preview_cd">Test %1$s on headphones</string>
+    <string name="remove_sound_cd">Remove %1$s</string>
+    <string name="sound_classic">Classic alarm</string>
+    <string name="sound_soft">Soft melody</string>
+    <string name="sound_beep">Simple beeps</string>
+    <string name="sound_chime">Morning chime</string>
+    <string name="custom_sound_default_name">Own sound</string>
+    <string name="msg_no_persistable">Could not get lasting access to the file.</string>
+    <string name="msg_not_playable">This file cannot be played on this device.</string>
+    <string name="msg_added">Added: %1$s</string>
+    <plurals name="msg_removed_switched">
+        <item quantity="one">Removed. %1$d alarm switched to “%2$s”.</item>
+        <item quantity="other">Removed. %1$d alarms switched to “%2$s”.</item>
+    </plurals>
+    <string name="msg_removed">Removed: %1$s</string>
+
+    <!-- Test playback -->
+    <string name="preview_ringing_blocked">An alarm is ringing – test playback cannot start now.</string>
+    <string name="audio_checking">Checking audio output…</string>
+    <string name="preview_playing">Playing on headphones: %1$s</string>
+    <string name="preview_volume_zero_suffix"> – but the media volume is 0!</string>
+    <string name="preview_fallback_suffix"> (file unavailable, built-in sound)</string>
+    <string name="preview_no_headphones">No allowed headphones – the test sound will not start.</string>
+    <string name="preview_lost">Headphones disconnected – playback stopped.</string>
+    <string name="preview_unverified">The audio output cannot be verified (%1$s) – staying silent.</string>
+    <string name="preview_failed">The sound cannot be played.</string>
+    <string name="preview_volume_zero" formatted="false">Volume is 0%.</string>
+    <string name="preview_ended">Test playback finished.</string>
+
+    <!-- Why the route is not verified -->
+    <string name="unverified_no_allowed">no allowed headphones</string>
+    <string name="unverified_disconnected">headphones disconnected</string>
+    <string name="unverified_no_route">the system has not reported the actual output yet</string>
+    <string name="unverified_elsewhere">the sound is not routed to the headphones</string>
+    <string name="unverified_unsafe">the sound could also play on the phone speaker</string>
+    <string name="unverified_call">a call or communication mode is active</string>
+    <string name="unverified_focus">another app took over audio</string>
+
+    <!-- Output kinds -->
+    <string name="kind_wired_headphones">Wired headphones</string>
+    <string name="kind_wired_headset">Wired headset</string>
+    <string name="kind_usb_headset">USB-C headphones</string>
+    <string name="kind_usb_device">USB audio device</string>
+    <string name="kind_bt_a2dp">Bluetooth headphones (A2DP)</string>
+    <string name="kind_ble_headset">Bluetooth LE Audio headphones</string>
+    <string name="kind_hearing_aid">Hearing aid</string>
+    <string name="kind_ble_speaker">Bluetooth LE speaker</string>
+    <string name="kind_speaker">Built-in speaker</string>
+    <string name="kind_earpiece">Earpiece</string>
+    <string name="kind_other">Other output</string>
+
+    <!-- Ringing screen -->
+    <string name="ring_title">ALARM</string>
+    <plurals name="ring_extra">
+        <item quantity="one">  (+%1$d more alarm)</item>
+        <item quantity="other">  (+%1$d more alarms)</item>
+    </plurals>
+    <string name="ring_swipe_cd">Alarm. Swipe up to stop, swipe down to snooze.</string>
+    <string name="ring_dismiss">Stop</string>
+    <string name="ring_snooze">Snooze</string>
+    <string name="ring_swipe_up">Swipe up to stop</string>
+    <string name="ring_swipe_down">Swipe down to snooze (%1$d min)</string>
+    <string name="ring_feedback_dismissed">Alarm stopped</string>
+    <string name="ring_feedback_snoozed">Snooze – %1$d min</string>
+    <string name="ring_feedback_timed_out">The alarm stopped automatically</string>
+    <string name="ring_fallback_sound">The selected sound file is unavailable – a built-in sound is playing</string>
+    <string name="audio_playing">Playing on headphones</string>
+    <string name="audio_playing_named">Playing on headphones: %1$s</string>
+    <string name="audio_playing_volume_zero">Playing on headphones, but media volume is 0 – vibrating too</string>
+    <string name="audio_no_headphones">Vibration only – no headphones</string>
+    <string name="audio_lost">Connection lost – switched to vibration</string>
+    <string name="audio_unverified">Audio output cannot be verified – vibration only</string>
+    <string name="audio_failed">The sound cannot be played – vibration only</string>
+    <string name="audio_volume_zero" formatted="false">Alarm volume 0% – vibration only</string>
+
+    <!-- Notifications -->
+    <string name="ch_ring_name">Active alarm</string>
+    <string name="ch_ring_desc">Full-screen alarm. Sound comes only from the app\'s own player routed to headphones.</string>
+    <string name="ch_snooze_name">Snooze</string>
+    <string name="ch_snooze_desc">Snoozed alarms</string>
+    <string name="ch_info_name">Missed and timed-out alarms</string>
+    <string name="ch_info_desc">Information when an alarm could not ring or stopped automatically</string>
+    <string name="notif_ring_title">FülesÉbresztő · %1$s</string>
+    <string name="notif_ring_checking">Alarm – checking audio output…</string>
+    <string name="notif_ring_text">%1$s – %2$s</string>
+    <string name="notif_snooze_title">Snooze – %1$s</string>
+    <string name="notif_snooze_text">Rings again at %1$s</string>
+    <string name="notif_cancel_snooze">Cancel snooze</string>
+    <string name="notif_missed_alarm">Missed alarm: %1$s</string>
+    <string name="notif_missed_snooze">Missed snooze: %1$s</string>
+    <string name="notif_missed_text">“%1$s” did not ring (phone off or clock changed).</string>
+    <string name="notif_timed_out_title">The alarm stopped automatically</string>
+    <plurals name="notif_timed_out_text">
+        <item quantity="one">“%1$s” stopped after %2$d minute because it was not turned off.</item>
+        <item quantity="other">“%1$s” stopped after %2$d minutes because it was not turned off.</item>
+    </plurals>
+    <string name="notif_start_failed_title">The system did not allow the alarm to start</string>
+    <string name="notif_start_failed_text">“%1$s” – check the permissions in Settings.</string>
+
+    <!-- Labels created by the alarm engine -->
+    <string name="default_alarm_label">Alarm</string>
+    <string name="copy_suffix">(copy)</string>
+    <string name="test_alarm_label">Test alarm</string>
+
+    <!-- Permissions -->
+    <string name="perm_exact">Exact alarms</string>
+    <string name="perm_exact_desc">Needed to ring at the exact time.</string>
+    <string name="perm_notifications">Notifications</string>
+    <string name="perm_notifications_desc">The alarm notification with Stop and Snooze buttons.</string>
+    <string name="perm_full_screen">Full-screen alarm</string>
+    <string name="perm_full_screen_desc">Shows the alarm screen over the lock screen.</string>
+    <string name="perm_vibration">Vibration</string>
+    <string name="perm_vibration_ok">Allowed (granted at install).</string>
+    <string name="perm_vibration_none">This device has no vibration motor.</string>
+    <string name="perm_battery">Battery optimisation</string>
+    <string name="perm_battery_ok">Not restricted.</string>
+    <string name="perm_battery_note">Alarms use exact alarm-clock scheduling (setAlarmClock), so optimisation usually does not block them. Some manufacturer power-saving modes can still delay them – in that case exclude the app from optimisation.</string>
+
+    <!-- Settings -->
+    <string name="section_audio_output">Audio output</string>
+    <string name="current_media_output">Current media output</string>
+    <string name="current_output_unavailable">Not reported by Android versions below 13</string>
+    <string name="media_volume">Media volume</string>
+    <string name="media_volume_low">%1$d%% – too low, the alarm may be quiet or silent</string>
+    <string name="monitoring">Output change monitoring</string>
+    <string name="monitoring_active">Active – event-based (AudioDeviceCallback, BECOMING_NOISY, route changes)</string>
+    <string name="monitoring_starting">Starting…</string>
+    <string name="connected_outputs">Connected outputs</string>
+    <string name="no_outputs">No output</string>
+    <string name="output_allowed">allowed for alarms</string>
+    <string name="output_not_allowed">not allowed</string>
+    <string name="output_never">never used for alarms</string>
+    <string name="allowed_devices_title">Allowed Bluetooth and USB devices</string>
+    <string name="allowed_devices_note">A Bluetooth output can also be a speaker or a car kit, so alarms only play on devices switched on here. Wired and USB-C headphones are allowed automatically.</string>
+    <string name="no_known_devices">No Bluetooth or USB audio device has connected yet</string>
+    <string name="no_known_devices_hint">Connect your headphones and they will appear here.</string>
+    <string name="connected">connected</string>
+    <string name="not_connected">not connected</string>
+    <string name="speaker_cannot_allow"> · speaker, cannot be allowed</string>
+    <string name="allow_device_cd">Allow %1$s</string>
+    <string name="forget">Remove</string>
+    <string name="test_headphones">Test headphone sound</string>
+    <string name="stop_test">Stop test sound</string>
+    <string name="section_defaults">Alarm – defaults for new alarms</string>
+    <string name="default_volume">Default volume: %1$d%%</string>
+    <string name="default_volume_cd">Default volume</string>
+    <string name="default_snooze">Default snooze</string>
+    <string name="max_ring">Maximum alarm time</string>
+    <string name="default_vibrate_note">Default for new alarms</string>
+    <string name="section_appearance">Appearance</string>
+    <string name="theme_dark">Dark theme</string>
+    <string name="theme_light">Light theme</string>
+    <string name="theme_system">System theme</string>
+    <string name="use_24h">24-hour time format</string>
+    <string name="language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_hu" translatable="false">Magyar</string>
+    <string name="language_en" translatable="false">English</string>
+    <string name="section_permissions">System permissions</string>
+    <string name="section_testing">Testing</string>
+    <string name="test_vibration">Test vibration</string>
+    <string name="test_alarm_1">Test alarm in 1 minute</string>
+    <string name="test_alarm_2">Test alarm in 2 minutes</string>
+    <string name="diagnostics">Diagnostic log (stored locally only)</string>
+    <string name="diagnostics_title">Diagnostic log</string>
+    <string name="diagnostics_empty">Empty.</string>
+    <string name="diagnostics_clear">Clear log</string>
+    <string name="section_about">About</string>
+    <string name="about_version">Version: %1$s (%2$s build, release %3$d)</string>
+    <string name="about_text">The alarm sound only plays on allowed, verified headphones. If the audio output cannot be verified, the phone only vibrates. The app works fully offline: no internet access, ads, analytics or account.\n\nLicences: the app\'s source code is MIT licensed. Libraries used: Android Jetpack (AndroidX, Jetpack Compose, Material 3, Room, DataStore, Navigation) and Kotlin/kotlinx.coroutines – all Apache License 2.0. The built-in alarm sounds are generated by the project\'s own script (tools/generate_sounds.py) and are free of third-party rights.</string>
+    <string name="msg_no_vibrator">This device has no vibration motor.</string>
+    <string name="msg_test_alarm">Test alarm at %1$s (in %2$d min)</string>
 </resources>

@@ -1,6 +1,7 @@
 package hu.ulpifex.fulesebreszto.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -16,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import hu.ulpifex.fulesebreszto.FulesApp
 import hu.ulpifex.fulesebreszto.alarm.RingSessionState
 import hu.ulpifex.fulesebreszto.data.AppSettings
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import hu.ulpifex.fulesebreszto.ui.ring.AlarmActivity
 import hu.ulpifex.fulesebreszto.ui.theme.FulesTheme
 import kotlinx.coroutines.launch
@@ -31,6 +33,10 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* state is re-read on resume */ }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

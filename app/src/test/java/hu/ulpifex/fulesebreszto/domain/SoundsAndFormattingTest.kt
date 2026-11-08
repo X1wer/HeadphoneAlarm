@@ -53,25 +53,38 @@ class SoundResolverTest {
 
 class FormattingTest {
 
+    private val hu = TimeFormat.HU
+    private val en = TimeFormat.EN
+
     @Test
     fun `24 and 12 hour times`() {
-        assertEquals("06:30", HuFormat.time(6, 30))
-        assertEquals("00:05", HuFormat.time(0, 5))
-        assertEquals("6:30 de.", HuFormat.time(6, 30, use24h = false))
-        assertEquals("12:00 du.", HuFormat.time(12, 0, use24h = false))
-        assertEquals("12:15 de.", HuFormat.time(0, 15, use24h = false))
+        assertEquals("06:30", hu.time(6, 30))
+        assertEquals("00:05", hu.time(0, 5))
+        assertEquals("6:30 de.", hu.time(6, 30, use24h = false))
+        assertEquals("12:00 du.", hu.time(12, 0, use24h = false))
+        assertEquals("12:15 de.", hu.time(0, 15, use24h = false))
+        assertEquals("06:30", en.time(6, 30))
+        assertEquals("6:30 AM", en.time(6, 30, use24h = false))
+        assertEquals("12:00 PM", en.time(12, 0, use24h = false))
     }
 
     @Test
     fun `repeat summaries`() {
         val base = Alarm(hour = 6, minute = 30)
-        assertEquals("H K Sze Cs P", HuFormat.repeatSummary(base.copy(days = WeekDays.WORKDAYS)))
-        assertEquals("Minden nap", HuFormat.repeatSummary(base.copy(days = WeekDays.EVERY_DAY)))
-        assertEquals("Szo V", HuFormat.repeatSummary(base.copy(days = WeekDays.WEEKEND)))
-        assertEquals("K Cs", HuFormat.repeatSummary(base.copy(days = WeekDays.of(DayOfWeek.THURSDAY, DayOfWeek.TUESDAY))))
+        assertEquals("H K Sze Cs P", hu.repeatSummary(base.copy(days = WeekDays.WORKDAYS)))
+        assertEquals("Minden nap", hu.repeatSummary(base.copy(days = WeekDays.EVERY_DAY)))
+        assertEquals("Szo V", hu.repeatSummary(base.copy(days = WeekDays.WEEKEND)))
+        assertEquals("K Cs", hu.repeatSummary(base.copy(days = WeekDays.of(DayOfWeek.THURSDAY, DayOfWeek.TUESDAY))))
         assertEquals(
             "Egyszeri · 2026. nov. 20. (péntek)",
-            HuFormat.repeatSummary(base.copy(days = WeekDays.NONE, oneShotDate = LocalDate.of(2026, 11, 20))),
+            hu.repeatSummary(base.copy(days = WeekDays.NONE, oneShotDate = LocalDate.of(2026, 11, 20))),
+        )
+        assertEquals("Mon–Fri", en.repeatSummary(base.copy(days = WeekDays.WORKDAYS)))
+        assertEquals("Every day", en.repeatSummary(base.copy(days = WeekDays.EVERY_DAY)))
+        assertEquals("Tue Thu", en.repeatSummary(base.copy(days = WeekDays.of(DayOfWeek.THURSDAY, DayOfWeek.TUESDAY))))
+        assertEquals(
+            "Once · Fri, Nov 20, 2026",
+            en.repeatSummary(base.copy(days = WeekDays.NONE, oneShotDate = LocalDate.of(2026, 11, 20))),
         )
     }
 
@@ -79,13 +92,21 @@ class FormattingTest {
     fun `relative day and countdown`() {
         val zone = ZoneId.of("Europe/Budapest")
         val now = ZonedDateTime.of(2026, 11, 6, 22, 0, 0, 0, zone) // Friday
-        assertEquals("ma 23:00", HuFormat.relativeDayTime(now.plusHours(1), now))
-        assertEquals("holnap 06:30", HuFormat.relativeDayTime(now.plusDays(1).withHour(6).withMinute(30), now))
-        assertEquals("hétfő 06:30", HuFormat.relativeDayTime(now.plusDays(3).withHour(6).withMinute(30), now))
+        assertEquals("ma 23:00", hu.relativeDayTime(now.plusHours(1), now))
+        assertEquals("holnap 06:30", hu.relativeDayTime(now.plusDays(1).withHour(6).withMinute(30), now))
+        assertEquals("hétfő 06:30", hu.relativeDayTime(now.plusDays(3).withHour(6).withMinute(30), now))
+        assertEquals("today 23:00", en.relativeDayTime(now.plusHours(1), now))
+        assertEquals("tomorrow 06:30", en.relativeDayTime(now.plusDays(1).withHour(6).withMinute(30), now))
+        assertEquals("Monday 06:30", en.relativeDayTime(now.plusDays(3).withHour(6).withMinute(30), now))
+        assertEquals("Fri, Nov 20, 2026 06:30", en.relativeDayTime(now.plusDays(14).withHour(6).withMinute(30), now))
         val ms = now.toInstant().toEpochMilli()
-        assertEquals("8 óra 30 perc múlva", HuFormat.countdown(ms, ms + (8 * 60 + 30) * 60_000L))
-        assertEquals("1 nap 2 óra múlva", HuFormat.countdown(ms, ms + 26 * 3_600_000L))
-        assertEquals("kevesebb mint 1 perc múlva", HuFormat.countdown(ms, ms + 30_000))
+        assertEquals("8 óra 30 perc múlva", hu.countdown(ms, ms + (8 * 60 + 30) * 60_000L))
+        assertEquals("1 nap 2 óra múlva", hu.countdown(ms, ms + 26 * 3_600_000L))
+        assertEquals("kevesebb mint 1 perc múlva", hu.countdown(ms, ms + 30_000))
+        assertEquals("in 8 h 30 min", en.countdown(ms, ms + (8 * 60 + 30) * 60_000L))
+        assertEquals("in 1 day 2 h", en.countdown(ms, ms + 26 * 3_600_000L))
+        assertEquals("in 3 days", en.countdown(ms, ms + 72 * 3_600_000L))
+        assertEquals("in less than a minute", en.countdown(ms, ms + 30_000))
     }
 
     @Test

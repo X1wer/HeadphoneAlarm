@@ -4,13 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
 import hu.ulpifex.fulesebreszto.alarm.AlarmRingService
 import hu.ulpifex.fulesebreszto.alarm.RingSessionState
 import hu.ulpifex.fulesebreszto.audio.HeadphoneStatus
 import hu.ulpifex.fulesebreszto.audio.HeadphoneStatusKind
 import hu.ulpifex.fulesebreszto.domain.Alarm
-import hu.ulpifex.fulesebreszto.domain.HuFormat
 import hu.ulpifex.fulesebreszto.domain.UpcomingAlarms
+import hu.ulpifex.fulesebreszto.domain.UpcomingRing
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,15 +22,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.ZonedDateTime
 
 data class AlarmListUiState(
     val loaded: Boolean = false,
     val alarms: List<Alarm> = emptyList(),
     val use24h: Boolean = true,
-    val nextTitle: String = "Nincs bekapcsolt ébresztés.",
-    val nextCountdown: String? = null,
+    val next: UpcomingRing? = null,
+    val now: ZonedDateTime = ZonedDateTime.now(),
     val headphones: HeadphoneStatus = HeadphoneStatus(HeadphoneStatusKind.NONE),
 )
 
@@ -48,31 +49,29 @@ class AlarmListViewModel(private val c: AppContainer) : ViewModel() {
         c.alarms.alarms, c.settings.settings, c.headphones.overview, minuteTicker,
     ) { alarms, settings, overview, _ ->
         val now = ZonedDateTime.now(c.clock)
-        val next = UpcomingAlarms.nextRing(alarms, now)
         AlarmListUiState(
             loaded = true,
             alarms = UpcomingAlarms.sortedForList(alarms),
             use24h = settings.use24h,
-            nextTitle = next?.let {
-                val at = Instant.ofEpochMilli(it.at).atZone(now.zone)
-                val prefix = if (it.isSnooze) "Következő ébresztés (szundi): " else "Következő ébresztés: "
-                prefix + HuFormat.relativeDayTime(at, now, settings.use24h)
-            } ?: "Nincs bekapcsolt ébresztés.",
-            nextCountdown = next?.let { HuFormat.countdown(now.toInstant().toEpochMilli(), it.at) },
+            next = UpcomingAlarms.nextRing(alarms, now),
+            now = now,
             headphones = overview.status,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AlarmListUiState())
 
+    private fun text(id: Int, vararg args: Any) = c.localized().getString(id, *args)
+
     fun setEnabled(alarm: Alarm, enabled: Boolean) = viewModelScope.launch {
         val next = c.engine.setEnabled(alarm.id, enabled)
         if (enabled && next != null) {
-            _messages.emit("Az ébresztés ${HuFormat.countdown(System.currentTimeMillis(), next)} szól")
+            val countdown = AppLocale.timeFormat(c.appContext).countdown(System.currentTimeMillis(), next)
+            _messages.emit(text(R.string.msg_rings_in, countdown))
         }
     }
 
     fun duplicate(alarm: Alarm) = viewModelScope.launch {
         c.engine.duplicate(alarm.id)
-        _messages.emit("Másolat létrehozva (kikapcsolva)")
+        _messages.emit(text(R.string.msg_copy_created))
     }
 
     fun delete(context: Context, alarm: Alarm) = viewModelScope.launch {
@@ -80,6 +79,6 @@ class AlarmListViewModel(private val c: AppContainer) : ViewModel() {
             AlarmRingService.sendAction(context, AlarmRingService.ACTION_DISMISS)
         }
         c.engine.delete(alarm.id)
-        _messages.emit("Ébresztés törölve")
+        _messages.emit(text(R.string.msg_deleted))
     }
 }

@@ -1,12 +1,17 @@
 package hu.ulpifex.fulesebreszto.ui.sounds
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
 import hu.ulpifex.fulesebreszto.alarm.RingSessionState
 import hu.ulpifex.fulesebreszto.audio.AudioPathState
 import hu.ulpifex.fulesebreszto.audio.SafeHeadphonePlayer
 import hu.ulpifex.fulesebreszto.domain.SilentReason
 import hu.ulpifex.fulesebreszto.domain.SoundRef
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
+import hu.ulpifex.fulesebreszto.ui.textRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,19 +33,21 @@ class SoundPreview(private val context: Context, private val container: AppConta
         allowedKeys = { allowed },
         log = container.log::log,
         listener = ::onState,
-        onAutoStop = { _state.value = _state.value.copy(playingRef = null, audible = false, message = "A tesztlejátszás véget ért.") },
+        onAutoStop = { _state.value = _state.value.copy(playingRef = null, audible = false, message = text(R.string.preview_ended)) },
     )
+
+    private fun text(id: Int, vararg args: Any): String = AppLocale.localized(context).getString(id, *args)
 
     fun play(ref: SoundRef, volumePercent: Int) {
         if (RingSessionState.isRinging) {
-            _state.value = PreviewState(message = "Ébresztés szól – a tesztlejátszás most nem indítható.")
+            _state.value = PreviewState(message = text(R.string.preview_ringing_blocked))
             return
         }
         container.appScope.launch {
             val keys = container.devices.allowedKeysNow()
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Handler(Looper.getMainLooper()).post {
                 allowed = keys
-                _state.value = PreviewState(playingRef = ref.serialized, message = "Hangkimenet ellenőrzése…")
+                _state.value = PreviewState(playingRef = ref.serialized, message = text(R.string.audio_checking))
                 player.start(ref, volumePercent.coerceAtLeast(5), fadeInMs = 300, loop = true, maxDurationMs = PREVIEW_MS)
             }
         }
@@ -54,11 +61,11 @@ class SoundPreview(private val context: Context, private val container: AppConta
     private fun onState(state: AudioPathState) {
         val current = _state.value
         _state.value = when (state) {
-            AudioPathState.Checking -> current.copy(message = "Hangkimenet ellenőrzése…", audible = false)
+            AudioPathState.Checking -> current.copy(message = text(R.string.audio_checking), audible = false)
             is AudioPathState.Audible -> current.copy(
-                message = "Szól a fejhallgatón: ${state.deviceName}" +
-                    (if (state.systemVolumeZero) " – de a médiahangerő 0!" else "") +
-                    (if (state.usedFallbackSound) " (a fájl nem érhető el, beépített hang)" else ""),
+                message = text(R.string.preview_playing, state.deviceName) +
+                    (if (state.systemVolumeZero) text(R.string.preview_volume_zero_suffix) else "") +
+                    (if (state.usedFallbackSound) text(R.string.preview_fallback_suffix) else ""),
                 audible = true,
             )
             is AudioPathState.Silent -> {
@@ -68,12 +75,12 @@ class SoundPreview(private val context: Context, private val container: AppConta
                     current.copy(
                         audible = false,
                         message = when (state.reason) {
-                            SilentReason.NO_HEADPHONES -> "Nincs engedélyezett fejhallgató – a teszthang nem indul el."
-                            SilentReason.OUTPUT_LOST -> "A fejhallgató lecsatlakozott – a lejátszás leállt."
+                            SilentReason.NO_HEADPHONES -> text(R.string.preview_no_headphones)
+                            SilentReason.OUTPUT_LOST -> text(R.string.preview_lost)
                             SilentReason.ROUTE_UNVERIFIED ->
-                                "A hangkimenet nem igazolható (${state.detail?.message ?: "ismeretlen"}) – néma marad."
-                            SilentReason.SOUND_FAILED -> "A hang nem játszható le."
-                            SilentReason.VOLUME_ZERO -> "A hangerő 0%."
+                                text(R.string.preview_unverified, state.detail?.let { text(it.textRes()) } ?: text(R.string.unknown))
+                            SilentReason.SOUND_FAILED -> text(R.string.preview_failed)
+                            SilentReason.VOLUME_ZERO -> text(R.string.preview_volume_zero)
                         },
                     )
                 }

@@ -46,7 +46,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.ui.builtInSoundNameRes
 import hu.ulpifex.fulesebreszto.domain.BuiltInSounds
 import hu.ulpifex.fulesebreszto.domain.SoundRef
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
@@ -76,9 +79,9 @@ fun SoundPickerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ébresztőhangok") },
+                title = { Text(stringResource(R.string.sounds_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Vissza") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
             )
         },
@@ -91,19 +94,20 @@ fun SoundPickerScreen(
             item {
                 PreviewBanner(preview)
             }
-            item { SectionTitle("Beépített hangok") }
+            item { SectionTitle(stringResource(R.string.builtin_sounds)) }
             items(BuiltInSounds.ALL, key = { it.key }) { sound ->
+                val name = stringResource(builtInSoundNameRes(sound.key))
                 SoundRow(
-                    name = sound.displayName,
+                    name = name,
                     selected = currentRef == sound.ref.serialized,
                     playing = preview.playingRef == sound.ref.serialized,
-                    onSelect = { onSelected(sound.ref.serialized, sound.displayName) },
+                    onSelect = { onSelected(sound.ref.serialized, name) },
                     onPlay = { vm.play(sound.ref) },
                     onStop = vm::stopPreview,
                     onRemove = null,
                 )
             }
-            item { SectionTitle("Saját hangfájlok") }
+            item { SectionTitle(stringResource(R.string.custom_sounds)) }
             item {
                 FilledTonalButton(
                     onClick = { picker.launch(arrayOf("audio/*", "application/ogg")) },
@@ -111,10 +115,10 @@ fun SoundPickerScreen(
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Hangfájl hozzáadása")
+                    Text(stringResource(R.string.add_sound_file))
                 }
                 Text(
-                    "Támogatott formátumok: MP3, WAV, OGG, M4A és minden, amit a készülék dekódolni tud. A fájl a telefonon marad, a program nem tölti fel sehová.",
+                    stringResource(R.string.formats_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -122,7 +126,7 @@ fun SoundPickerScreen(
             }
             if (customs.isEmpty()) {
                 item {
-                    Text("Még nincs saját hangfájl.", style = MaterialTheme.typography.bodyMedium,
+                    Text(stringResource(R.string.no_custom_sounds), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
@@ -154,7 +158,7 @@ private fun PreviewBanner(preview: PreviewState) {
             Icon(AppIcons.Headphones, contentDescription = null)
             Spacer(Modifier.width(10.dp))
             Text(
-                preview.message ?: "A tesztlejátszás kizárólag ellenőrzött, engedélyezett fejhallgatón szólal meg – a telefon hangszóróján soha.",
+                preview.message ?: stringResource(R.string.preview_note),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -177,12 +181,12 @@ private fun SoundRow(
         trailingContent = {
             Row {
                 if (playing) {
-                    IconButton(onClick = onStop) { Icon(AppIcons.Stop, contentDescription = "$name tesztlejátszásának leállítása") }
+                    IconButton(onClick = onStop) { Icon(AppIcons.Stop, contentDescription = stringResource(R.string.stop_preview_cd, name)) }
                 } else {
-                    IconButton(onClick = onPlay) { Icon(Icons.Filled.PlayArrow, contentDescription = "$name tesztlejátszása fejhallgatón") }
+                    IconButton(onClick = onPlay) { Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.play_preview_cd, name)) }
                 }
                 if (onRemove != null) {
-                    IconButton(onClick = onRemove) { Icon(Icons.Filled.Delete, contentDescription = "$name eltávolítása") }
+                    IconButton(onClick = onRemove) { Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.remove_sound_cd, name)) }
                 }
             }
         },

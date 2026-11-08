@@ -1,5 +1,7 @@
 # FülesÉbresztő
 
+[English version](README.en.md)
+
 Natív Android-ébresztőalkalmazás, amelynek hangja **kizárólag csatlakoztatott és engedélyezett fejhallgatón** szólal meg. Ha nincs megfelelő fejhallgató, vagy a hangkimenet nem igazolható, a telefon **csak rezeg** – a beépített hangszórón soha nem indít ébresztőhangot.
 
 > **Build típusa:** a GitHub Actions és a helyi fordítás **debug APK-t** készít (debug kulccsal aláírva). Release-aláírókulcs nincs a projektben, ezért release APK nem készül.
@@ -16,6 +18,7 @@ Natív Android-ébresztőalkalmazás, amelynek hangja **kizárólag csatlakoztat
 - **Teljes képernyős ébresztés** lezárt képernyőn is; felfelé húzás = leállítás, lefelé húzás = szundi; külön gombok és képernyőolvasó-műveletek; értesítési műveletek.
 - **Beépített hangok** (4 db, saját szintetizálású, jogtiszta) és **saját hangfájlok** (MP3, WAV, OGG, M4A … a rendszer fájlválasztójával, tartós olvasási joggal).
 - Pontos időzítés `AlarmManager.setAlarmClock()`-kal; helyreállítás újraindítás (a feloldás előtt is), frissítés, kézi időállítás és időzóna-váltás után.
+- **Nyelvek: magyar és angol.** Az alkalmazás a telefon nyelvét követi (magyar telefonon magyar, minden más nyelven angol), és a *Beállítások → Nyelv* pontban átállítható.
 - Sötét (alapértelmezett), világos és rendszertéma; 24 órás formátum kapcsolható; nagy betűméretre igazodó felület.
 - Teljesen offline: nincs `INTERNET` jogosultság, reklám, analitika vagy fiók.
 
@@ -119,7 +122,7 @@ AlarmManager.setAlarmClock ──▶ AlarmReceiver ──▶ AlarmRingService (f
 - „Ne zavarjanak – teljes némítás” módban a rendszer a médiahangot és a rezgést is elnémíthatja.
 - Telefonhívás vagy kommunikációs mód alatt az ébresztés csak rezeg.
 - A feloldás előtti (direct boot) állapotban a saját hangfájlok nem olvashatók; ilyenkor a beépített tartalékhang szól.
-- A Material 3 időbeviteli mező („Beírás billentyűzettel”) feliratait a rendszer nyelve határozza meg.
+- A nyelvváltást Android 17-en (natív alkalmazásszintű nyelv) ellenőriztem; az Android 10–12-es út (környezet-becsomagolás) lefordul, de ezeken a verziókon nem futott.
 
 ## Hangkimenet biztonsága – részletesen
 
@@ -171,7 +174,7 @@ Emulátoron/készüléken futó tesztek: `./gradlew connectedDebugAndroidTest`.
 ## Technikai összefoglaló
 
 - Kotlin 2.4, Jetpack Compose + Material 3, MVVM, Room 2.8, DataStore, Navigation Compose, Android Gradle Plugin 9.4.1, Gradle 9.6.1.
-- Csomagok: `domain` (tiszta Kotlin logika: időszámítás, állapotgép, gesztus, ütemezési terv), `audio` (útvonal-szabályok, biztonságos lejátszó, rezgés), `alarm` (motor, AlarmManager, service, értesítések, fogadók), `data` (Room, DataStore, napló), `ui` (képernyők).
+- Csomagok: `domain` (tiszta Kotlin logika: időszámítás, állapotgép, gesztus, ütemezési terv, kétnyelvű formázás), `audio` (útvonal-szabályok, biztonságos lejátszó, rezgés), `alarm` (motor, AlarmManager, service, értesítések, fogadók), `data` (Room, DataStore, napló), `i18n` (alkalmazásnyelv), `ui` (képernyők). Feliratok: `res/values/strings.xml` (angol, alapértelmezett) és `res/values-hu/strings.xml` (magyar).
 - Tesztek: 95 JVM unit teszt (`app/src/test`) és 13 műszeres teszt (`app/src/androidTest`: Room, valódi AlarmManager, Compose gesztusok).
 - Beépített hangok: `tools/generate_sounds.py` állítja elő őket (szintetizált hullámformák, harmadik fél jogaitól mentesek).
 

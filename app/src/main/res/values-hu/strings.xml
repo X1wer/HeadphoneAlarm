@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Közös -->
+    <string name="back">Vissza</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Mégse</string>
+    <string name="delete">Törlés</string>
+    <string name="close">Bezárás</string>
+    <string name="open">Megnyitás</string>
+    <string name="copy">Másolás</string>
+    <string name="settings">Beállítások</string>
+    <string name="unknown">ismeretlen</string>
+    <string name="minutes_value">%1$d perc</string>
+    <string name="minutes_value_custom">%1$d perc (egyéni)</string>
+    <string name="custom_value">Egyéni érték…</string>
+    <string name="minutes_range_label">Perc (%1$d–%2$d)</string>
+    <string name="percent_value">%1$d%%</string>
+
+    <!-- Fejhallgató-állapotsor -->
+    <string name="status_connected">Fejhallgató csatlakoztatva</string>
+    <string name="status_connected_named">Fejhallgató csatlakoztatva · %1$s</string>
+    <string name="status_none">Nincs fejhallgató – ébresztéskor csak rezgés</string>
+    <string name="status_check">Hangkimenet ellenőrzése szükséges</string>
+    <string name="status_issue_volume_zero">A médiahangerő 0 – az ébresztés nem lesz hallható</string>
+    <string name="status_issue_not_allowed">„%1$s” nincs engedélyezve – a Beállításokban jelölheted meg</string>
+
+    <!-- Ébresztések listája -->
+    <string name="new_alarm">Új ébresztés</string>
+    <string name="no_alarms">Még nincs ébresztés. Az „Új ébresztés” gombbal hozhatsz létre egyet.</string>
+    <string name="next_none">Nincs bekapcsolt ébresztés.</string>
+    <string name="next_alarm">Következő ébresztés: %1$s</string>
+    <string name="next_alarm_snooze">Következő ébresztés (szundi): %1$s</string>
+    <string name="missing_permissions">Hiányzó engedély: %1$s</string>
+    <string name="action_edit">Szerkesztés</string>
+    <string name="action_copy_or_delete">Másolás vagy törlés</string>
+    <string name="alarm_state_on">Bekapcsolva</string>
+    <string name="alarm_state_off">Kikapcsolva</string>
+    <string name="snoozing">Szundizik</string>
+    <string name="headphone_alarm_sound">Fejhallgatós ébresztés · %1$s</string>
+    <string name="toggle_alarm_cd">%1$s %2$s bekapcsolása</string>
+    <string name="delete_title">Törlöd az ébresztést?</string>
+    <string name="delete_text">%1$s – %2$s\nA törlés nem vonható vissza.</string>
+    <string name="msg_rings_in">Az ébresztés %1$s szól</string>
+    <string name="msg_copy_created">Másolat létrehozva (kikapcsolva)</string>
+    <string name="msg_deleted">Ébresztés törölve</string>
+    <string name="msg_saved">Ébresztés mentve</string>
+
+    <!-- Szerkesztő -->
+    <string name="edit_title">Ébresztés szerkesztése</string>
+    <string name="delete_alarm_cd">Ébresztés törlése</string>
+    <string name="save_alarm">Ébresztés mentése</string>
+    <string name="wheel_mode">Görgetős választó</string>
+    <string name="keyboard_mode">Beírás billentyűzettel</string>
+    <string name="preview_rings">Megszólal: %1$s · %2$s</string>
+    <string name="error_past">A kiválasztott időpont már elmúlt – válassz későbbi dátumot vagy időt.</string>
+    <string name="section_name">Ébresztés neve</string>
+    <string name="section_repeat">Ismétlés</string>
+    <string name="day_selected">kiválasztva</string>
+    <string name="day_not_selected">nincs kiválasztva</string>
+    <string name="preset_weekdays">Hétköznap</string>
+    <string name="preset_weekend">Hétvége</string>
+    <string name="preset_every_day">Minden nap</string>
+    <string name="preset_once">Egyszeri</string>
+    <string name="one_shot_title">Egyszeri ébresztés</string>
+    <string name="choose_date">Dátum kiválasztása</string>
+    <string name="date_button">Dátum</string>
+    <string name="section_sound">Ébresztőhang</string>
+    <string name="choose_sound">Ébresztőhang kiválasztása</string>
+    <string name="open_sound_picker">Hangválasztó megnyitása</string>
+    <string name="section_volume">Hangerő</string>
+    <string name="volume_cd">Ébresztés hangereje</string>
+    <string name="volume_zero_warning" formatted="false">0% hangerőnél az ébresztés csak rezegni fog.</string>
+    <string name="volume_note">A hangerő a lejátszó saját hangerejét állítja, a telefon rendszerhangerejét nem módosítja.</string>
+    <string name="section_vibration">Rezgés</string>
+    <string name="vibrate_with_headphones">Rezgés fejhallgató mellett is</string>
+    <string name="vibrate_note">Fejhallgató nélkül az ébresztés mindig rezeg.</string>
+    <string name="section_snooze">Szundi</string>
+    <string name="snooze_duration">Szundi időtartama</string>
+    <string name="section_max">Ébresztés maximális időtartama</string>
+    <string name="max_note">Ennyi idő után automatikusan leáll</string>
+    <string name="custom_snooze_title">Egyéni szundi</string>
+    <string name="custom_max_title">Egyéni maximális időtartam</string>
+    <string name="wheel_hour">Óra</string>
+    <string name="wheel_minute">Perc</string>
+    <string name="wheel_increase">Növelés</string>
+    <string name="wheel_decrease">Csökkentés</string>
+    <string name="wheel_cd">%1$s: %2$d</string>
+
+    <!-- Hangválasztó -->
+    <string name="sounds_title">Ébresztőhangok</string>
+    <string name="builtin_sounds">Beépített hangok</string>
+    <string name="custom_sounds">Saját hangfájlok</string>
+    <string name="add_sound_file">Hangfájl hozzáadása</string>
+    <string name="formats_note">Támogatott formátumok: MP3, WAV, OGG, M4A és minden, amit a készülék dekódolni tud. A fájl a telefonon marad, a program nem tölti fel sehová.</string>
+    <string name="no_custom_sounds">Még nincs saját hangfájl.</string>
+    <string name="preview_note">A tesztlejátszás kizárólag ellenőrzött, engedélyezett fejhallgatón szólal meg – a telefon hangszóróján soha.</string>
+    <string name="stop_preview_cd">%1$s tesztlejátszásának leállítása</string>
+    <string name="play_preview_cd">%1$s tesztlejátszása fejhallgatón</string>
+    <string name="remove_sound_cd">%1$s eltávolítása</string>
+    <string name="sound_classic">Klasszikus ébresztés</string>
+    <string name="sound_soft">Lágy dallam</string>
+    <string name="sound_beep">Egyszerű sípolás</string>
+    <string name="sound_chime">Reggeli harang</string>
+    <string name="custom_sound_default_name">Saját hang</string>
+    <string name="msg_no_persistable">A fájlhoz nem kapható tartós hozzáférés.</string>
+    <string name="msg_not_playable">A fájl nem játszható le ezen a készüléken.</string>
+    <string name="msg_added">Hozzáadva: %1$s</string>
+    <plurals name="msg_removed_switched">
+        <item quantity="one">Eltávolítva. %1$d ébresztés a(z) „%2$s” hangra váltott.</item>
+        <item quantity="other">Eltávolítva. %1$d ébresztés a(z) „%2$s” hangra váltott.</item>
+    </plurals>
+    <string name="msg_removed">Eltávolítva: %1$s</string>
+
+    <!-- Tesztlejátszás -->
+    <string name="preview_ringing_blocked">Ébresztés szól – a tesztlejátszás most nem indítható.</string>
+    <string name="audio_checking">Hangkimenet ellenőrzése…</string>
+    <string name="preview_playing">Szól a fejhallgatón: %1$s</string>
+    <string name="preview_volume_zero_suffix"> – de a médiahangerő 0!</string>
+    <string name="preview_fallback_suffix"> (a fájl nem érhető el, beépített hang)</string>
+    <string name="preview_no_headphones">Nincs engedélyezett fejhallgató – a teszthang nem indul el.</string>
+    <string name="preview_lost">A fejhallgató lecsatlakozott – a lejátszás leállt.</string>
+    <string name="preview_unverified">A hangkimenet nem igazolható (%1$s) – néma marad.</string>
+    <string name="preview_failed">A hang nem játszható le.</string>
+    <string name="preview_volume_zero" formatted="false">A hangerő 0%.</string>
+    <string name="preview_ended">A tesztlejátszás véget ért.</string>
+
+    <!-- Miért nem igazolható az útvonal -->
+    <string name="unverified_no_allowed">nincs engedélyezett fejhallgató</string>
+    <string name="unverified_disconnected">a fejhallgató lecsatlakozott</string>
+    <string name="unverified_no_route">a rendszer még nem jelentette a tényleges kimenetet</string>
+    <string name="unverified_elsewhere">a hang nem a fejhallgatóra került</string>
+    <string name="unverified_unsafe">a hang a telefon hangszóróján is megszólalhatna</string>
+    <string name="unverified_call">hívás vagy kommunikációs mód aktív</string>
+    <string name="unverified_focus">másik alkalmazás vette át a hangot</string>
+
+    <!-- Kimenettípusok -->
+    <string name="kind_wired_headphones">Vezetékes fejhallgató</string>
+    <string name="kind_wired_headset">Vezetékes headset</string>
+    <string name="kind_usb_headset">USB-C fejhallgató</string>
+    <string name="kind_usb_device">USB-audioeszköz</string>
+    <string name="kind_bt_a2dp">Bluetooth-fejhallgató (A2DP)</string>
+    <string name="kind_ble_headset">Bluetooth LE Audio fejhallgató</string>
+    <string name="kind_hearing_aid">Hallókészülék</string>
+    <string name="kind_ble_speaker">Bluetooth LE hangszóró</string>
+    <string name="kind_speaker">Beépített hangszóró</string>
+    <string name="kind_earpiece">Beszédhangszóró</string>
+    <string name="kind_other">Egyéb kimenet</string>
+
+    <!-- Ébresztőképernyő -->
+    <string name="ring_title">ÉBRESZTÉS</string>
+    <plurals name="ring_extra">
+        <item quantity="one">  (+%1$d további)</item>
+        <item quantity="other">  (+%1$d további)</item>
+    </plurals>
+    <string name="ring_swipe_cd">Ébresztés. Húzd felfelé a kikapcsoláshoz, lefelé a szundihoz.</string>
+    <string name="ring_dismiss">Leállítás</string>
+    <string name="ring_snooze">Szundi</string>
+    <string name="ring_swipe_up">Húzd felfelé a kikapcsoláshoz</string>
+    <string name="ring_swipe_down">Húzd lefelé a szundihoz (%1$d perc)</string>
+    <string name="ring_feedback_dismissed">Ébresztés leállítva</string>
+    <string name="ring_feedback_snoozed">Szundi – %1$d perc</string>
+    <string name="ring_feedback_timed_out">Az ébresztés automatikusan leállt</string>
+    <string name="ring_fallback_sound">A választott hangfájl nem érhető el – beépített hang szól</string>
+    <string name="audio_playing">Fejhallgatón szól</string>
+    <string name="audio_playing_named">Fejhallgatón szól: %1$s</string>
+    <string name="audio_playing_volume_zero">Fejhallgatón szól, de a médiahangerő 0 – rezgés is</string>
+    <string name="audio_no_headphones">Csak rezgés – nincs fejhallgató</string>
+    <string name="audio_lost">Kapcsolat megszakadt – rezgésre váltva</string>
+    <string name="audio_unverified">A hangkimenet nem igazolható – csak rezgés</string>
+    <string name="audio_failed">A hang nem játszható le – csak rezgés</string>
+    <string name="audio_volume_zero" formatted="false">Ébresztési hangerő 0% – csak rezgés</string>
+
+    <!-- Értesítések -->
+    <string name="ch_ring_name">Aktív ébresztés</string>
+    <string name="ch_ring_desc">Teljes képernyős ébresztés. Hangot csak az alkalmazás saját, fejhallgatóra irányított lejátszója ad.</string>
+    <string name="ch_snooze_name">Szundi</string>
+    <string name="ch_snooze_desc">Szundizó ébresztések</string>
+    <string name="ch_info_name">Elmaradt és lejárt ébresztések</string>
+    <string name="ch_info_desc">Tájékoztatás, ha egy ébresztés nem tudott megszólalni vagy automatikusan leállt</string>
+    <string name="notif_ring_title">FülesÉbresztő · %1$s</string>
+    <string name="notif_ring_checking">Ébresztés – hangkimenet ellenőrzése…</string>
+    <string name="notif_ring_text">%1$s – %2$s</string>
+    <string name="notif_snooze_title">Szundi – %1$s</string>
+    <string name="notif_snooze_text">Újra szól: %1$s</string>
+    <string name="notif_cancel_snooze">Szundi leállítása</string>
+    <string name="notif_missed_alarm">Elmaradt ébresztés: %1$s</string>
+    <string name="notif_missed_snooze">Elmaradt szundi: %1$s</string>
+    <string name="notif_missed_text">„%1$s” nem szólalt meg (kikapcsolt telefon vagy időátállítás).</string>
+    <string name="notif_timed_out_title">Az ébresztés automatikusan leállt</string>
+    <plurals name="notif_timed_out_text">
+        <item quantity="one">„%1$s” %2$d perc után leállt, mert nem kapcsoltad ki.</item>
+        <item quantity="other">„%1$s” %2$d perc után leállt, mert nem kapcsoltad ki.</item>
+    </plurals>
+    <string name="notif_start_failed_title">Az ébresztést a rendszer nem engedte elindítani</string>
+    <string name="notif_start_failed_text">„%1$s” – ellenőrizd a jogosultságokat a Beállításokban.</string>
+
+    <!-- A motor által létrehozott nevek -->
+    <string name="default_alarm_label">Ébresztés</string>
+    <string name="copy_suffix">(másolat)</string>
+    <string name="test_alarm_label">Próbaébresztés</string>
+
+    <!-- Jogosultságok -->
+    <string name="perm_exact">Pontos ébresztés</string>
+    <string name="perm_exact_desc">Szükséges a pontos időben történő megszólaláshoz.</string>
+    <string name="perm_notifications">Értesítések</string>
+    <string name="perm_notifications_desc">Az ébresztés értesítése, leállítás és szundi gombok.</string>
+    <string name="perm_full_screen">Teljes képernyős ébresztés</string>
+    <string name="perm_full_screen_desc">Lezárt képernyőn az ébresztőképernyő megjelenítése.</string>
+    <string name="perm_vibration">Rezgés</string>
+    <string name="perm_vibration_ok">Engedélyezve (telepítéskor megadott jogosultság).</string>
+    <string name="perm_vibration_none">A készüléken nincs rezgőmotor.</string>
+    <string name="perm_battery">Akkumulátor-optimalizálás</string>
+    <string name="perm_battery_ok">Nincs korlátozva.</string>
+    <string name="perm_battery_note">Az ébresztések pontos időzítésűek (setAlarmClock), így az optimalizálás általában nem akadályozza őket. Egyes gyártói energiatakarékos módok mégis késleltethetnek – ilyenkor vedd ki az alkalmazást az optimalizálás alól.</string>
+
+    <!-- Beállítások -->
+    <string name="section_audio_output">Hangkimenet</string>
+    <string name="current_media_output">Aktuális médiakimenet</string>
+    <string name="current_output_unavailable">A rendszer ezen az Android-verzión nem adja meg (Android 13 alatt)</string>
+    <string name="media_volume">Médiahangerő</string>
+    <string name="media_volume_low">%1$d%% – túl alacsony, az ébresztés halk vagy néma lehet</string>
+    <string name="monitoring">Kimenetváltozás figyelése</string>
+    <string name="monitoring_active">Aktív – eseményalapú (AudioDeviceCallback, BECOMING_NOISY, útvonalváltás)</string>
+    <string name="monitoring_starting">Indítás…</string>
+    <string name="connected_outputs">Csatlakoztatott kimenetek</string>
+    <string name="no_outputs">Nincs kimenet</string>
+    <string name="output_allowed">ébresztésre engedélyezett</string>
+    <string name="output_not_allowed">nincs engedélyezve</string>
+    <string name="output_never">ébresztéshez soha nem használt</string>
+    <string name="allowed_devices_title">Engedélyezett Bluetooth- és USB-eszközök</string>
+    <string name="allowed_devices_note">A Bluetooth-kimenet lehet hangszóró vagy autós kihangosító is, ezért csak az itt bekapcsolt eszközökön szólhat ébresztés. Vezetékes és USB-C fejhallgatók automatikusan engedélyezettek.</string>
+    <string name="no_known_devices">Még nem csatlakozott Bluetooth- vagy USB-audioeszköz</string>
+    <string name="no_known_devices_hint">Csatlakoztasd a fejhallgatót, és itt megjelenik.</string>
+    <string name="connected">csatlakoztatva</string>
+    <string name="not_connected">nincs csatlakoztatva</string>
+    <string name="speaker_cannot_allow"> · hangszóró, nem engedélyezhető</string>
+    <string name="allow_device_cd">%1$s engedélyezése</string>
+    <string name="forget">Törlés</string>
+    <string name="test_headphones">Fejhallgatóhang tesztelése</string>
+    <string name="stop_test">Teszthang leállítása</string>
+    <string name="section_defaults">Ébresztés – alapértékek új ébresztésekhez</string>
+    <string name="default_volume">Alapértelmezett hangerő: %1$d%%</string>
+    <string name="default_volume_cd">Alapértelmezett hangerő</string>
+    <string name="default_snooze">Alapértelmezett szundi</string>
+    <string name="max_ring">Maximális ébresztési idő</string>
+    <string name="default_vibrate_note">Alapbeállítás új ébresztésekhez</string>
+    <string name="section_appearance">Megjelenés</string>
+    <string name="theme_dark">Sötét téma</string>
+    <string name="theme_light">Világos téma</string>
+    <string name="theme_system">Rendszertéma</string>
+    <string name="use_24h">24 órás időformátum</string>
+    <string name="language">Nyelv</string>
+    <string name="language_system">Rendszer nyelve</string>
+    <string name="section_permissions">Rendszerjogosultságok</string>
+    <string name="section_testing">Tesztelés</string>
+    <string name="test_vibration">Rezgés tesztelése</string>
+    <string name="test_alarm_1">Próbaébresztés 1 perc múlva</string>
+    <string name="test_alarm_2">Próbaébresztés 2 perc múlva</string>
+    <string name="diagnostics">Diagnosztikai napló (csak helyben)</string>
+    <string name="diagnostics_title">Diagnosztikai napló</string>
+    <string name="diagnostics_empty">Üres.</string>
+    <string name="diagnostics_clear">Napló törlése</string>
+    <string name="section_about">Névjegy</string>
+    <string name="about_version">Verzió: %1$s (%2$s build, %3$d. kiadás)</string>
+    <string name="about_text">Az ébresztő hangja kizárólag engedélyezett, ellenőrzött fejhallgatón szólal meg. Ha a hangkimenet nem igazolható, a telefon csak rezeg. Az alkalmazás teljesen offline működik: nincs internet-hozzáférése, reklámja, analitikája vagy fiókja.\n\nLicencek: az alkalmazás forráskódja MIT-licences. Felhasznált könyvtárak: Android Jetpack (AndroidX, Jetpack Compose, Material 3, Room, DataStore, Navigation) és Kotlin/kotlinx.coroutines – mind Apache License 2.0. A beépített ébresztőhangokat a projekt saját szkriptje állítja elő (tools/generate_sounds.py), harmadik fél jogaitól mentesek.</string>
+    <string name="msg_no_vibrator">Ezen a készüléken nincs rezgőmotor.</string>
+    <string name="msg_test_alarm">Próbaébresztés %1$s-kor (%2$d perc múlva)</string>
+</resources>

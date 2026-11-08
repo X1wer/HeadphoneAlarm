@@ -161,7 +161,10 @@ class OutputPolicyTest {
         assertEquals(HeadphoneStatusKind.NONE, HeadphoneStatusResolver.resolve(listOf(speaker), noneAllowed, 50).kind)
         val pending = HeadphoneStatusResolver.resolve(listOf(speaker, buds), noneAllowed, 50)
         assertEquals(HeadphoneStatusKind.NEEDS_CHECK, pending.kind)
+        assertEquals(StatusIssue.DEVICE_NOT_ALLOWED, pending.issue)
         assertEquals("Galaxy Buds", pending.deviceName)
-        assertEquals(HeadphoneStatusKind.NEEDS_CHECK, HeadphoneStatusResolver.resolve(listOf(wired), noneAllowed, 0).kind)
+        val silent = HeadphoneStatusResolver.resolve(listOf(wired), noneAllowed, 0)
+        assertEquals(HeadphoneStatusKind.NEEDS_CHECK, silent.kind)
+        assertEquals(StatusIssue.MEDIA_VOLUME_ZERO, silent.issue)
     }
 }

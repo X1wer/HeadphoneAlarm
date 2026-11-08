@@ -43,6 +43,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    androidResources {
+        // Only English (default) and Hungarian are shipped, also for library resources,
+        // so every screen is consistently in one of the two languages.
+        localeFilters += listOf("en", "hu")
+    }
+
+    bundle {
+        // The in-app language switch needs both languages on every device.
+        language { enableSplit = false }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

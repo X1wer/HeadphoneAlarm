@@ -70,6 +70,19 @@ További eszközszintű megfigyelések:
 - A beállítások a beépített hangszórót „ébresztéshez soha nem használt” kimenetként mutatták.
 - Szerkesztő: görgetős választóval beállított 12:44, „Minden nap”, mentés → helyes rendszer-ébresztés.
 
+## 4b. Kétnyelvűség (angol bővítés után)
+
+| Teszt | Eredmény |
+|---|---|
+| Unit tesztek (a formázó magyar és angol kimenetével bővítve) | **95/95 sikeres** |
+| Műszeres tesztek (a gesztusteszt a feliratokat erőforrásból olvassa) | **13/13 sikeres** angol rendszernyelvű emulátoron |
+| Lint | 0 hiba, nincs hiányzó fordítás; egy névütközést talált (`state_on`/`state_off` felülírta volna a Compose saját kapcsoló-feliratait) – átnevezve |
+| Angol felület (rendszernyelv: angol) | **Sikeres**: főképernyő, beállítások, első indításkori „Alarm” nevű minta-ébresztés |
+| Váltás magyarra a Beállítások → Nyelv pontban | **Sikeres**: a rendszer az alkalmazásnyelvet `[hu]`-ra állította, a képernyő azonnal magyarra váltott |
+| Ébresztőképernyő és értesítés magyarul (próbaébresztés lezárt képernyőn) | **Sikeres**: „ÉBRESZTÉS”, „Csak rezgés – nincs fejhallgató”, „Húzd felfelé a kikapcsoláshoz”, értesítés: „Próbaébresztés – Csak rezgés – nincs fejhallgató” |
+| Visszaváltás „Rendszer nyelve” beállításra | **Sikeres**: alkalmazásnyelv `[]`, a felület angol |
+| Android 10–12 nyelvváltási út | **Nem tesztelt** (nincs ilyen emulátor-image) |
+
 ## 5. Nem igazolt területek
 
 - **Hangszórómentes működés fejhallgatóval**: fizikai teszt nélkül nem igazolt. A logika unit tesztekkel lefedett, de a gyártói audio-routing viselkedést csak valódi készüléken lehet mérni.

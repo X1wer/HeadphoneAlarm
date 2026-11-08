@@ -16,11 +16,12 @@ import hu.ulpifex.fulesebreszto.audio.SafeHeadphonePlayer
 import hu.ulpifex.fulesebreszto.audio.VibrationController
 import hu.ulpifex.fulesebreszto.domain.Alarm
 import hu.ulpifex.fulesebreszto.domain.AlarmStateMachine
-import hu.ulpifex.fulesebreszto.domain.HuFormat
 import hu.ulpifex.fulesebreszto.domain.RingEffect
 import hu.ulpifex.fulesebreszto.domain.RingEvent
 import hu.ulpifex.fulesebreszto.domain.SilentReason
 import hu.ulpifex.fulesebreszto.domain.TriggerKind
+import hu.ulpifex.fulesebreszto.i18n.AppLocale
+import hu.ulpifex.fulesebreszto.ui.ringStatusText
 import hu.ulpifex.fulesebreszto.ui.AppVisibility
 import hu.ulpifex.fulesebreszto.ui.ring.AlarmActivity
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,10 @@ class AlarmRingService : Service() {
     private var pendingTriggers = 0
     private var wakeLock: PowerManager.WakeLock? = null
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -64,7 +69,7 @@ class AlarmRingService : Service() {
     }
 
     private fun enterForeground() {
-        val notification = container.notifications.ringNotification("FülesÉbresztő", "Ébresztés – hangkimenet ellenőrzése…")
+        val notification = container.notifications.initialRingNotification()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(AlarmNotifications.ID_RING, notification)
             return
@@ -114,10 +119,7 @@ class AlarmRingService : Service() {
             container = container,
             scope = scope,
             onChanged = { ui ->
-                container.notifications.updateRing(
-                    "FülesÉbresztő · ${ui.alarmTime}",
-                    "${ui.label} – ${ui.audioStatusText}",
-                )
+                container.notifications.updateRing(ui.alarmTime, ui.label, ringStatusText(AppLocale.localized(this), ui))
             },
             onEnded = { onSessionEnded() },
         )
@@ -203,7 +205,7 @@ private class RingSession(
         log = container.log::log,
         listener = { state -> handler.post { onAudio(state) } },
     )
-    private val timeText = LocalTime.now().let { HuFormat.time(it.hour, it.minute) }
+    private val timeText = LocalTime.now().let { AppLocale.timeFormat(context).time(it.hour, it.minute) }
     private val timeout = Runnable { dispatch(RingEvent.Timeout) }
     private val engineJobs = mutableListOf<Job>()
     private var usedFallback = false

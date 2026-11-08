@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import hu.ulpifex.fulesebreszto.R
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -43,9 +45,9 @@ fun WheelTimePicker(hour: Int, minute: Int, onChange: (Int, Int) -> Unit, modifi
     val currentHour by rememberUpdatedState(hour)
     val currentMinute by rememberUpdatedState(minute)
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Wheel(count = 24, selected = hour, label = "Óra", onSelected = { onChange(it, currentMinute) })
+        Wheel(count = 24, selected = hour, label = stringResource(R.string.wheel_hour), onSelected = { onChange(it, currentMinute) })
         Text(":", fontSize = 48.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(horizontal = 8.dp))
-        Wheel(count = 60, selected = minute, label = "Perc", onSelected = { onChange(currentHour, it) })
+        Wheel(count = 60, selected = minute, label = stringResource(R.string.wheel_minute), onSelected = { onChange(currentHour, it) })
     }
 }
 
@@ -83,16 +85,19 @@ private fun Wheel(count: Int, selected: Int, label: String, onSelected: (Int) ->
         }
     }
 
+    val description = stringResource(R.string.wheel_cd, label, selected)
+    val increase = stringResource(R.string.wheel_increase)
+    val decrease = stringResource(R.string.wheel_decrease)
     Box(
         modifier = Modifier
             .width(96.dp)
             .height(itemHeight * 3)
             .focusable()
             .semantics {
-                contentDescription = "$label: $selected"
+                contentDescription = description
                 customActions = listOf(
-                    CustomAccessibilityAction("Növelés") { onSelectedState((selected + 1) % count); true },
-                    CustomAccessibilityAction("Csökkentés") { onSelectedState((selected - 1 + count) % count); true },
+                    CustomAccessibilityAction(increase) { onSelectedState((selected + 1) % count); true },
+                    CustomAccessibilityAction(decrease) { onSelectedState((selected - 1 + count) % count); true },
                 )
             },
         contentAlignment = Alignment.Center,

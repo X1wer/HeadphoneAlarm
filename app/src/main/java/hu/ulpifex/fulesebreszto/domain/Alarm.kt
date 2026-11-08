@@ -11,7 +11,8 @@ import java.time.LocalDate
  */
 data class Alarm(
     val id: Long = 0,
-    val label: String = DEFAULT_LABEL,
+    /** User-given name; an empty name is replaced by the localized default when saved. */
+    val label: String = "",
     val hour: Int = 6,
     val minute: Int = 30,
     val days: WeekDays = WeekDays.WORKDAYS,
@@ -35,15 +36,14 @@ data class Alarm(
     val isRepeating: Boolean get() = !days.isEmpty
 
     companion object {
-        const val DEFAULT_LABEL = "Ébresztés"
         const val MIN_SNOOZE = 1
         const val MAX_SNOOZE = 60
         const val MIN_RING = 1
         const val MAX_RING = 60
 
         /** The very first alarm shown after installation (disabled on purpose). */
-        fun firstRunDefault(now: Long) = Alarm(
-            label = DEFAULT_LABEL,
+        fun firstRunDefault(now: Long, label: String) = Alarm(
+            label = label,
             hour = 6,
             minute = 30,
             days = WeekDays.WORKDAYS,

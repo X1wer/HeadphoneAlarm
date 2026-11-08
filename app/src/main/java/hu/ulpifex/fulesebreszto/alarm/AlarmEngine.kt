@@ -29,6 +29,9 @@ interface AlarmNotifier {
     fun clearSnoozed(alarmId: Long)
 }
 
+/** Names the engine gives to alarms, in the current app language. */
+data class EngineLabels(val defaultLabel: String, val copySuffix: String, val testLabel: String)
+
 /**
  * Single entry point for every change that affects scheduling: create, edit, toggle,
  * duplicate, delete, trigger bookkeeping, snooze, dismiss, reboot and clock changes.
@@ -40,6 +43,7 @@ class AlarmEngine(
     private val notifier: AlarmNotifier,
     private val clock: Clock,
     private val settings: suspend () -> AppSettings,
+    private val labels: () -> EngineLabels,
     private val log: (String) -> Unit = {},
 ) {
     private val mutex = Mutex()
@@ -51,7 +55,7 @@ class AlarmEngine(
         val now = now()
         val existing = if (alarm.id != 0L) store.get(alarm.id) else null
         var normalized = alarm.copy(
-            label = alarm.label.trim().ifEmpty { Alarm.DEFAULT_LABEL },
+            label = alarm.label.trim().ifEmpty { labels().defaultLabel },
             volumePercent = alarm.volumePercent.coerceIn(0, 100),
             snoozeMinutes = alarm.snoozeMinutes.coerceIn(Alarm.MIN_SNOOZE, Alarm.MAX_SNOOZE),
             maxRingMinutes = alarm.maxRingMinutes.coerceIn(Alarm.MIN_RING, Alarm.MAX_RING),
@@ -102,7 +106,7 @@ class AlarmEngine(
         val source = mutex.withLock { store.get(id) } ?: return null
         val copy = source.copy(
             id = 0,
-            label = "${source.label} (másolat)",
+            label = "${source.label} ${labels().copySuffix}",
             enabled = false,
             nextTriggerAt = null,
             lastTriggeredAt = null,
@@ -124,7 +128,7 @@ class AlarmEngine(
      * (deleted, disabled, edited, or this occurrence already rang).
      */
     suspend fun onTrigger(id: Long, kind: TriggerKind, occurrence: Long): Alarm? = mutex.withLock {
-        if (id == TEST_ALARM_ID) return@withLock testAlarm(settings())
+        if (id == TEST_ALARM_ID) return@withLock testAlarm(settings(), labels().testLabel)
         val alarm = store.get(id)
         if (!TriggerValidator.isValid(alarm, kind, occurrence)) {
             log("ignored stale $kind trigger for $id")
@@ -177,7 +181,7 @@ class AlarmEngine(
     /** Creates the first-run default alarm (weekdays 06:30, disabled) when the table is empty. */
     suspend fun ensureFirstRunAlarm(isEmpty: Boolean, defaults: AppSettings) {
         if (!isEmpty) return
-        val alarm = Alarm.firstRunDefault(clock.millis()).copy(
+        val alarm = Alarm.firstRunDefault(clock.millis(), labels().defaultLabel).copy(
             volumePercent = defaults.defaultVolume,
             snoozeMinutes = defaults.defaultSnoozeMinutes,
             maxRingMinutes = defaults.defaultMaxRingMinutes,
@@ -209,9 +213,9 @@ class AlarmEngine(
     companion object {
         const val TEST_ALARM_ID = -1L
 
-        fun testAlarm(settings: AppSettings) = Alarm(
+        fun testAlarm(settings: AppSettings, label: String) = Alarm(
             id = TEST_ALARM_ID,
-            label = "Próbaébresztés",
+            label = label,
             days = WeekDays.NONE,
             enabled = true,
             sound = BuiltInSounds.DEFAULT.ref,

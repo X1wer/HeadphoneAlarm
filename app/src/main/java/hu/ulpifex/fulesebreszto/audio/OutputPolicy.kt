@@ -1,18 +1,18 @@
 package hu.ulpifex.fulesebreszto.audio
 
 /** Platform-independent classification of an audio output (mirrors AudioDeviceInfo types). */
-enum class OutputKind(val label: String) {
-    WIRED_HEADPHONES("Vezetékes fejhallgató"),
-    WIRED_HEADSET("Vezetékes headset"),
-    USB_HEADSET("USB-C fejhallgató"),
-    USB_DEVICE("USB-audioeszköz"),
-    BLUETOOTH_A2DP("Bluetooth-fejhallgató (A2DP)"),
-    BLE_HEADSET("Bluetooth LE Audio fejhallgató"),
-    HEARING_AID("Hallókészülék"),
-    BLE_SPEAKER("Bluetooth LE hangszóró"),
-    BUILTIN_SPEAKER("Beépített hangszóró"),
-    BUILTIN_EARPIECE("Beszédhangszóró"),
-    OTHER("Egyéb kimenet");
+enum class OutputKind {
+    WIRED_HEADPHONES,
+    WIRED_HEADSET,
+    USB_HEADSET,
+    USB_DEVICE,
+    BLUETOOTH_A2DP,
+    BLE_HEADSET,
+    HEARING_AID,
+    BLE_SPEAKER,
+    BUILTIN_SPEAKER,
+    BUILTIN_EARPIECE,
+    OTHER;
 
     /** Always accepted: these device types are physically worn. */
     val isTrustedByType: Boolean
@@ -70,14 +70,14 @@ sealed interface RouteVerdict {
     data class Unverified(val reason: UnverifiedReason) : RouteVerdict
 }
 
-enum class UnverifiedReason(val message: String) {
-    NO_ALLOWED_DEVICE("Nincs engedélyezett fejhallgató"),
-    TARGET_DISCONNECTED("A fejhallgató lecsatlakozott"),
-    NO_ROUTE_INFO("A rendszer még nem jelentette a tényleges kimenetet"),
-    ROUTED_ELSEWHERE("A hang nem a fejhallgatóra került"),
-    UNSAFE_OUTPUT_ACTIVE("A hang a telefon hangszóróján is megszólalhatna"),
-    CALL_OR_OTHER_MODE("Hívás vagy kommunikációs mód aktív"),
-    FOCUS_LOST("Másik alkalmazás vette át a hangot"),
+enum class UnverifiedReason {
+    NO_ALLOWED_DEVICE,
+    TARGET_DISCONNECTED,
+    NO_ROUTE_INFO,
+    ROUTED_ELSEWHERE,
+    UNSAFE_OUTPUT_ACTIVE,
+    CALL_OR_OTHER_MODE,
+    FOCUS_LOST,
 }
 
 /** Everything the policy needs to judge the current route, captured at one moment. */
@@ -155,10 +155,13 @@ class AudioPathEvaluator(private val policy: OutputPolicy) {
 /** Summary used by the main screen's status line. */
 enum class HeadphoneStatusKind { CONNECTED, NONE, NEEDS_CHECK }
 
+/** Why the status line asks the user to check the output. */
+enum class StatusIssue { MEDIA_VOLUME_ZERO, DEVICE_NOT_ALLOWED }
+
 data class HeadphoneStatus(
     val kind: HeadphoneStatusKind,
     val deviceName: String? = null,
-    val detail: String? = null,
+    val issue: StatusIssue? = null,
 )
 
 object HeadphoneStatusResolver {
@@ -166,19 +169,13 @@ object HeadphoneStatusResolver {
         val target = policy.chooseTarget(connected)
         if (target != null) {
             if (mediaVolumePercent != null && mediaVolumePercent == 0) {
-                return HeadphoneStatus(
-                    HeadphoneStatusKind.NEEDS_CHECK, target.name,
-                    "A médiahangerő 0 – az ébresztés nem lesz hallható",
-                )
+                return HeadphoneStatus(HeadphoneStatusKind.NEEDS_CHECK, target.name, StatusIssue.MEDIA_VOLUME_ZERO)
             }
             return HeadphoneStatus(HeadphoneStatusKind.CONNECTED, target.name)
         }
         val pending = connected.firstOrNull { it.kind.needsApproval || it.kind == OutputKind.BLE_SPEAKER }
         if (pending != null) {
-            return HeadphoneStatus(
-                HeadphoneStatusKind.NEEDS_CHECK, pending.name,
-                "„${pending.name}” nincs engedélyezve – a Beállításokban jelölheted meg",
-            )
+            return HeadphoneStatus(HeadphoneStatusKind.NEEDS_CHECK, pending.name, StatusIssue.DEVICE_NOT_ALLOWED)
         }
         return HeadphoneStatus(HeadphoneStatusKind.NONE)
     }

@@ -25,6 +25,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.unit.dp
 import hu.ulpifex.fulesebreszto.audio.HeadphoneStatus
 import hu.ulpifex.fulesebreszto.audio.HeadphoneStatusKind
+import hu.ulpifex.fulesebreszto.audio.StatusIssue
+import hu.ulpifex.fulesebreszto.R
+import androidx.compose.ui.res.stringResource
 import hu.ulpifex.fulesebreszto.ui.theme.LocalStatusColors
 
 /** Status line under the title: "Fejhallgató csatlakoztatva" / "Nincs fejhallgató" / check needed. */
@@ -33,22 +36,29 @@ fun HeadphoneStatusChip(status: HeadphoneStatus, modifier: Modifier = Modifier) 
     val colors = LocalStatusColors.current
     val (text, icon, container, content) = when (status.kind) {
         HeadphoneStatusKind.CONNECTED -> Quad(
-            "Fejhallgató csatlakoztatva" + (status.deviceName?.let { " · $it" } ?: ""),
+            status.deviceName?.takeIf { it.isNotBlank() }
+                ?.let { stringResource(R.string.status_connected_named, it) }
+                ?: stringResource(R.string.status_connected),
             AppIcons.Headphones, colors.successContainer, colors.onSuccessContainer,
         )
         HeadphoneStatusKind.NONE -> Quad(
-            "Nincs fejhallgató – ébresztéskor csak rezgés",
+            stringResource(R.string.status_none),
             AppIcons.HeadphonesOff,
             MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HeadphoneStatusKind.NEEDS_CHECK -> Quad(
-            "Hangkimenet ellenőrzése szükséges",
+            stringResource(R.string.status_check),
             AppIcons.Headphones, colors.warningContainer, colors.onWarningContainer,
         )
     }
+    val detail = when (status.issue) {
+        StatusIssue.MEDIA_VOLUME_ZERO -> stringResource(R.string.status_issue_volume_zero)
+        StatusIssue.DEVICE_NOT_ALLOWED -> stringResource(R.string.status_issue_not_allowed, status.deviceName.orEmpty())
+        null -> null
+    }
     Surface(
         modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = text + (status.detail?.let { ". $it" } ?: "")
+            contentDescription = text + (detail?.let { ". $it" } ?: "")
         },
         color = container,
         contentColor = content,
@@ -60,7 +70,7 @@ fun HeadphoneStatusChip(status: HeadphoneStatus, modifier: Modifier = Modifier) 
                 Spacer(Modifier.width(10.dp))
                 Text(text, style = MaterialTheme.typography.labelLarge)
             }
-            status.detail?.let {
+            detail?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp, start = 30.dp))
             }
         }

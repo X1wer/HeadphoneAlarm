@@ -61,7 +61,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ulpifex.fulesebreszto.AppContainer
 import hu.ulpifex.fulesebreszto.domain.Alarm
-import hu.ulpifex.fulesebreszto.domain.HuFormat
+import androidx.compose.ui.res.stringResource
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.domain.TimeFormat
+import hu.ulpifex.fulesebreszto.ui.rememberTimeFormat
+import hu.ulpifex.fulesebreszto.ui.soundName
+import java.time.Instant
 import hu.ulpifex.fulesebreszto.ui.PermissionStatus
 import hu.ulpifex.fulesebreszto.ui.Permissions
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
@@ -83,6 +88,7 @@ fun AlarmListScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    val fmt = rememberTimeFormat()
     var permissions by remember { mutableStateOf(PermissionStatus()) }
     var pendingDelete by remember { mutableStateOf<Alarm?>(null) }
 
@@ -101,11 +107,11 @@ fun AlarmListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("FülesÉbresztő", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                 },
                 actions = {
                     IconButton(onClick = onSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Beállítások")
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
                     }
                 },
             )
@@ -114,7 +120,7 @@ fun AlarmListScreen(
             ExtendedFloatingActionButton(
                 onClick = onNew,
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("Új ébresztés") },
+                text = { Text(stringResource(R.string.new_alarm)) },
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -128,14 +134,26 @@ fun AlarmListScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { HeadphoneStatusChip(state.headphones, Modifier.fillMaxWidth()) }
-            item { NextAlarmHeader(state.nextTitle, state.nextCountdown) }
+            item {
+                val next = state.next
+                val title = if (next == null) {
+                    stringResource(R.string.next_none)
+                } else {
+                    val at = Instant.ofEpochMilli(next.at).atZone(state.now.zone)
+                    stringResource(
+                        if (next.isSnooze) R.string.next_alarm_snooze else R.string.next_alarm,
+                        fmt.relativeDayTime(at, state.now, state.use24h),
+                    )
+                }
+                NextAlarmHeader(title, next?.let { fmt.countdown(state.now.toInstant().toEpochMilli(), it.at) })
+            }
             if (permissions.criticalMissing.isNotEmpty()) {
                 item { PermissionWarning(permissions.criticalMissing, onOpen = onSettings) }
             }
             if (state.loaded && state.alarms.isEmpty()) {
                 item {
                     Text(
-                        "Még nincs ébresztés. Az „Új ébresztés” gombbal hozhatsz létre egyet.",
+                        stringResource(R.string.no_alarms),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 24.dp),
@@ -146,6 +164,7 @@ fun AlarmListScreen(
                 AlarmCard(
                     alarm = alarm,
                     use24h = state.use24h,
+                    fmt = fmt,
                     onClick = { onEdit(alarm.id) },
                     onToggle = { vm.setEnabled(alarm, it) },
                     onDuplicate = { vm.duplicate(alarm) },
@@ -159,6 +178,7 @@ fun AlarmListScreen(
         DeleteAlarmDialog(
             alarm = alarm,
             use24h = state.use24h,
+            fmt = fmt,
             onConfirm = {
                 vm.delete(context, alarm)
                 pendingDelete = null
@@ -179,18 +199,18 @@ private fun NextAlarmHeader(title: String, countdown: String?) {
 }
 
 @Composable
-private fun PermissionWarning(missing: List<String>, onOpen: () -> Unit) {
+private fun PermissionWarning(missing: List<Int>, onOpen: () -> Unit) {
     val colors = LocalStatusColors.current
     Surface(color = colors.warningContainer, contentColor = colors.onWarningContainer, shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
             Text(
-                "Hiányzó engedély: ${missing.joinToString(", ")}",
+                stringResource(R.string.missing_permissions, missing.map { stringResource(it) }.joinToString(", ")),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onOpen) { Text("Megnyitás") }
+            TextButton(onClick = onOpen) { Text(stringResource(R.string.open)) }
         }
     }
 }
@@ -200,14 +220,20 @@ private fun PermissionWarning(missing: List<String>, onOpen: () -> Unit) {
 private fun AlarmCard(
     alarm: Alarm,
     use24h: Boolean,
+    fmt: TimeFormat,
     onClick: () -> Unit,
     onToggle: (Boolean) -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val time = HuFormat.time(alarm.hour, alarm.minute, use24h)
-    val repeat = HuFormat.repeatSummary(alarm)
+    val time = fmt.time(alarm.hour, alarm.minute, use24h)
+    val repeat = fmt.repeatSummary(alarm)
+    val stateOn = stringResource(R.string.alarm_state_on)
+    val stateOff = stringResource(R.string.alarm_state_off)
+    val copyLabel = stringResource(R.string.copy)
+    val deleteLabel = stringResource(R.string.delete)
+    val toggleDescription = stringResource(R.string.toggle_alarm_cd, time, alarm.label)
     val contentAlpha = if (alarm.enabled) 1f else 0.55f
 
     Box {
@@ -217,17 +243,17 @@ private fun AlarmCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClickLabel = "Szerkesztés",
-                    onLongClickLabel = "Másolás vagy törlés",
+                    onClickLabel = stringResource(R.string.action_edit),
+                    onLongClickLabel = stringResource(R.string.action_copy_or_delete),
                     onClick = onClick,
                     onLongClick = { menuOpen = true },
                 )
                 .semantics(mergeDescendants = true) {
                     contentDescription = "$time, ${alarm.label}, $repeat"
-                    stateDescription = if (alarm.enabled) "Bekapcsolva" else "Kikapcsolva"
+                    stateDescription = if (alarm.enabled) stateOn else stateOff
                     customActions = listOf(
-                        CustomAccessibilityAction("Másolás") { onDuplicate(); true },
-                        CustomAccessibilityAction("Törlés") { onDelete(); true },
+                        CustomAccessibilityAction(copyLabel) { onDuplicate(); true },
+                        CustomAccessibilityAction(deleteLabel) { onDelete(); true },
                     )
                 },
         ) {
@@ -237,13 +263,13 @@ private fun AlarmCard(
                     Text(alarm.label, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(repeat, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     if (alarm.snoozeUntil != null) {
-                        Text("Szundizik", style = MaterialTheme.typography.bodySmall, color = LocalStatusColors.current.warning)
+                        Text(stringResource(R.string.snoozing), style = MaterialTheme.typography.bodySmall, color = LocalStatusColors.current.warning)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                         Icon(AppIcons.Headphones, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Fejhallgatós ébresztés · ${alarm.soundName}",
+                            stringResource(R.string.headphone_alarm_sound, soundName(alarm)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -254,26 +280,26 @@ private fun AlarmCard(
                 Switch(
                     checked = alarm.enabled,
                     onCheckedChange = onToggle,
-                    modifier = Modifier.semantics { contentDescription = "$time ${alarm.label} bekapcsolása" },
+                    modifier = Modifier.semantics { contentDescription = toggleDescription },
                 )
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            DropdownMenuItem(text = { Text("Másolás") }, onClick = { menuOpen = false; onDuplicate() })
-            DropdownMenuItem(text = { Text("Törlés") }, onClick = { menuOpen = false; onDelete() })
+            DropdownMenuItem(text = { Text(copyLabel) }, onClick = { menuOpen = false; onDuplicate() })
+            DropdownMenuItem(text = { Text(deleteLabel) }, onClick = { menuOpen = false; onDelete() })
         }
     }
 }
 
 @Composable
-fun DeleteAlarmDialog(alarm: Alarm, use24h: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+fun DeleteAlarmDialog(alarm: Alarm, use24h: Boolean, fmt: TimeFormat, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Törlöd az ébresztést?") },
-        text = { Text("${HuFormat.time(alarm.hour, alarm.minute, use24h)} – ${alarm.label}\nA törlés nem vonható vissza.") },
+        title = { Text(stringResource(R.string.delete_title)) },
+        text = { Text(stringResource(R.string.delete_text, fmt.time(alarm.hour, alarm.minute, use24h), alarm.label)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("Törlés", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

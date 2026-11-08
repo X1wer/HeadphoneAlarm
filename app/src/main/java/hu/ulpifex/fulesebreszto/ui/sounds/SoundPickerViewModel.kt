@@ -8,6 +8,8 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
+import hu.ulpifex.fulesebreszto.ui.builtInSoundNameRes
 import hu.ulpifex.fulesebreszto.data.CustomSound
 import hu.ulpifex.fulesebreszto.domain.BuiltInSounds
 import hu.ulpifex.fulesebreszto.domain.SoundRef
@@ -30,6 +32,8 @@ class SoundPickerViewModel(private val app: Application, private val c: AppConta
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messages: SharedFlow<String> = _messages
 
+    private fun text(id: Int, vararg args: Any): String = c.localized().getString(id, *args)
+
     fun play(ref: SoundRef) = viewModelScope.launch {
         val volume = c.settings.current().defaultVolume
         preview.play(ref, volume)
@@ -46,24 +50,25 @@ class SoundPickerViewModel(private val app: Application, private val c: AppConta
         val playable = withContext(Dispatchers.IO) { isPlayableAudio(uri) }
         if (!granted || !playable) {
             runCatching { resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            _messages.emit(if (!granted) "A fájlhoz nem kapható tartós hozzáférés." else "A fájl nem játszható le ezen a készüléken.")
+            _messages.emit(text(if (!granted) R.string.msg_no_persistable else R.string.msg_not_playable))
             return@launch
         }
         val name = withContext(Dispatchers.IO) { displayName(uri) }
         c.sounds.add(uri.toString(), name, System.currentTimeMillis())
-        _messages.emit("Hozzáadva: $name")
+        _messages.emit(text(R.string.msg_added, name))
     }
 
     fun removeCustom(sound: CustomSound) = viewModelScope.launch {
         val fallback = BuiltInSounds.DEFAULT
-        val replaced = c.alarms.replaceSound(sound.uri, fallback.ref.serialized, fallback.displayName)
+        val fallbackName = text(builtInSoundNameRes(fallback.key))
+        val replaced = c.alarms.replaceSound(sound.uri, fallback.ref.serialized, fallbackName)
         c.sounds.remove(sound.uri)
         runCatching {
             app.contentResolver.releasePersistableUriPermission(Uri.parse(sound.uri), Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         _messages.emit(
-            if (replaced > 0) "Eltávolítva. $replaced ébresztés a(z) „${fallback.displayName}” hangra váltott."
-            else "Eltávolítva: ${sound.displayName}",
+            if (replaced > 0) c.localized().resources.getQuantityString(R.plurals.msg_removed_switched, replaced, replaced, fallbackName)
+            else text(R.string.msg_removed, sound.displayName),
         )
     }
 
@@ -86,7 +91,7 @@ class SoundPickerViewModel(private val app: Application, private val c: AppConta
                 cursor.getString(0)?.takeIf { it.isNotBlank() }?.let { return it.substringBeforeLast('.') }
             }
         }
-        return uri.lastPathSegment ?: "Saját hang"
+        return uri.lastPathSegment ?: text(R.string.custom_sound_default_name)
     }
 
     override fun onCleared() {

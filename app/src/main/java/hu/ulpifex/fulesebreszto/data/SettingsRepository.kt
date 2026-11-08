@@ -13,11 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-enum class ThemeMode(val label: String) {
-    DARK("Sötét téma"),
-    LIGHT("Világos téma"),
-    SYSTEM("Rendszertéma"),
-}
+enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.DARK,

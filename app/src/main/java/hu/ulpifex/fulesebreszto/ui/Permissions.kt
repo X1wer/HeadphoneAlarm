@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.R
 import hu.ulpifex.fulesebreszto.audio.VibrationController
 
 data class PermissionStatus(
@@ -16,12 +17,12 @@ data class PermissionStatus(
     val batteryUnrestricted: Boolean = true,
     val hasVibrator: Boolean = true,
 ) {
-    /** Missing items that can prevent an alarm from ringing or showing. */
-    val criticalMissing: List<String>
+    /** Missing items (string resources) that can prevent an alarm from ringing or showing. */
+    val criticalMissing: List<Int>
         get() = buildList {
-            if (!exactAlarms) add("Pontos ébresztés")
-            if (!notifications) add("Értesítések")
-            if (!fullScreen) add("Teljes képernyős ébresztés")
+            if (!exactAlarms) add(R.string.perm_exact)
+            if (!notifications) add(R.string.perm_notifications)
+            if (!fullScreen) add(R.string.perm_full_screen)
         }
 }
 

@@ -29,15 +29,19 @@ sealed interface SoundRef {
     }
 }
 
+/**
+ * A bundled tone. [displayName] is only a stored fallback; screens always show the
+ * translated name for the key.
+ */
 data class BuiltInSound(val key: String, val displayName: String, val rawName: String) {
     val ref: SoundRef.BuiltIn get() = SoundRef.BuiltIn(key)
 }
 
 object BuiltInSounds {
-    val CLASSIC = BuiltInSound("classic", "Klasszikus ébresztés", "classic_alarm")
-    val SOFT = BuiltInSound("soft", "Lágy dallam", "soft_melody")
-    val BEEP = BuiltInSound("beep", "Egyszerű sípolás", "simple_beep")
-    val CHIME = BuiltInSound("chime", "Reggeli harang", "morning_chime")
+    val CLASSIC = BuiltInSound("classic", "Classic alarm", "classic_alarm")
+    val SOFT = BuiltInSound("soft", "Soft melody", "soft_melody")
+    val BEEP = BuiltInSound("beep", "Simple beeps", "simple_beep")
+    val CHIME = BuiltInSound("chime", "Morning chime", "morning_chime")
 
     val ALL = listOf(CLASSIC, SOFT, BEEP, CHIME)
     val DEFAULT = CLASSIC
@@ -49,7 +53,7 @@ object BuiltInSounds {
 }
 
 /** Outcome of resolving which sound will actually be played. */
-data class ResolvedSound(val ref: SoundRef, val usedFallback: Boolean, val reason: String? = null)
+data class ResolvedSound(val ref: SoundRef, val usedFallback: Boolean)
 
 /**
  * Decides what to play: the configured sound when it is readable, otherwise the built-in
@@ -63,7 +67,7 @@ object SoundResolver {
                 if (runCatching { isReadable(configured) }.getOrDefault(false)) {
                     ResolvedSound(configured, usedFallback = false)
                 } else {
-                    ResolvedSound(BuiltInSounds.FALLBACK.ref, usedFallback = true, reason = "A hangfájl nem érhető el")
+                    ResolvedSound(BuiltInSounds.FALLBACK.ref, usedFallback = true)
                 }
         }
 }

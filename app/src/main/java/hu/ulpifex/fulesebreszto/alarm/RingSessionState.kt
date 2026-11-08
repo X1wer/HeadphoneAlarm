@@ -22,21 +22,6 @@ data class RingUiState(
     val finished: FinishKind? = null,
 ) {
     val extraAlarms: Int get() = (alarmIds.size - 1).coerceAtLeast(0)
-
-    val audioStatusText: String
-        get() = when {
-            state == RingState.TRIGGERED || state == RingState.CHECKING_AUDIO -> "Hangkimenet ellenőrzése…"
-            state == RingState.PLAYING_HEADPHONES && systemVolumeZero ->
-                "Fejhallgatón szól, de a médiahangerő 0 – rezgés is"
-            state == RingState.PLAYING_HEADPHONES -> "Fejhallgatón szól" + (audioDevice?.let { ": $it" } ?: "")
-            else -> when (silentReason) {
-                SilentReason.NO_HEADPHONES, null -> "Csak rezgés – nincs fejhallgató"
-                SilentReason.OUTPUT_LOST -> "Kapcsolat megszakadt – rezgésre váltva"
-                SilentReason.ROUTE_UNVERIFIED -> "A hangkimenet nem igazolható – csak rezgés"
-                SilentReason.SOUND_FAILED -> "A hang nem játszható le – csak rezgés"
-                SilentReason.VOLUME_ZERO -> "Ébresztési hangerő 0% – csak rezgés"
-            }
-        }
 }
 
 /** In-process bridge between the ringing service and the alarm activity. */
