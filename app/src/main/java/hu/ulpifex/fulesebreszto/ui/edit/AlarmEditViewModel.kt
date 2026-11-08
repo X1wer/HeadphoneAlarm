@@ -1,0 +1,128 @@
+package hu.ulpifex.fulesebreszto.ui.edit
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import hu.ulpifex.fulesebreszto.AppContainer
+import hu.ulpifex.fulesebreszto.data.AppSettings
+import hu.ulpifex.fulesebreszto.domain.Alarm
+import hu.ulpifex.fulesebreszto.domain.HuFormat
+import hu.ulpifex.fulesebreszto.domain.NextTriggerCalculator
+import hu.ulpifex.fulesebreszto.domain.SoundRef
+import hu.ulpifex.fulesebreszto.domain.WeekDays
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZonedDateTime
+
+data class EditUiState(
+    val loaded: Boolean = false,
+    val isNew: Boolean = true,
+    val draft: Alarm = Alarm(),
+    val use24h: Boolean = true,
+    val error: String? = null,
+    val saving: Boolean = false,
+)
+
+sealed interface EditEvent {
+    data class Saved(val message: String) : EditEvent
+    data object Deleted : EditEvent
+}
+
+class AlarmEditViewModel(private val c: AppContainer, private val alarmId: Long) : ViewModel() {
+
+    private val _state = MutableStateFlow(EditUiState())
+    val state: StateFlow<EditUiState> = _state.asStateFlow()
+
+    private val _events = MutableSharedFlow<EditEvent>(extraBufferCapacity = 2)
+    val events: SharedFlow<EditEvent> = _events
+
+    init {
+        viewModelScope.launch {
+            val settings = c.settings.current()
+            val existing = if (alarmId != 0L) c.alarms.get(alarmId) else null
+            _state.value = EditUiState(
+                loaded = true,
+                isNew = existing == null,
+                draft = existing ?: newAlarm(settings),
+                use24h = settings.use24h,
+            )
+        }
+    }
+
+    private fun newAlarm(s: AppSettings) = Alarm(
+        label = Alarm.DEFAULT_LABEL,
+        hour = 6,
+        minute = 30,
+        days = WeekDays.WORKDAYS,
+        enabled = true,
+        volumePercent = s.defaultVolume,
+        snoozeMinutes = s.defaultSnoozeMinutes,
+        maxRingMinutes = s.defaultMaxRingMinutes,
+        vibrateWithHeadphones = s.defaultVibrateWithHeadphones,
+    )
+
+    private fun edit(transform: (Alarm) -> Alarm) = _state.update { it.copy(draft = transform(it.draft), error = null) }
+
+    fun setTime(hour: Int, minute: Int) = edit { it.copy(hour = hour, minute = minute) }
+    fun setLabel(label: String) = edit { it.copy(label = label.take(60)) }
+    fun setVolume(percent: Int) = edit { it.copy(volumePercent = percent.coerceIn(0, 100)) }
+    fun setVibrateWithHeadphones(value: Boolean) = edit { it.copy(vibrateWithHeadphones = value) }
+    fun setSnooze(minutes: Int) = edit { it.copy(snoozeMinutes = minutes.coerceIn(Alarm.MIN_SNOOZE, Alarm.MAX_SNOOZE)) }
+    fun setMaxRing(minutes: Int) = edit { it.copy(maxRingMinutes = minutes.coerceIn(Alarm.MIN_RING, Alarm.MAX_RING)) }
+    fun setSound(ref: String, name: String) = edit { it.copy(sound = SoundRef.parse(ref), soundName = name) }
+    fun setDate(date: LocalDate) = edit { it.copy(oneShotDate = date) }
+    fun setDays(days: WeekDays) = edit { withDays(it, days) }
+    fun toggleDay(day: DayOfWeek) = edit { withDays(it, it.days.toggle(day)) }
+
+    private fun withDays(alarm: Alarm, days: WeekDays): Alarm {
+        val date = if (days.isEmpty) {
+            alarm.oneShotDate ?: NextTriggerCalculator.defaultOneShotDate(alarm.hour, alarm.minute, ZonedDateTime.now(c.clock))
+        } else {
+            alarm.oneShotDate
+        }
+        return alarm.copy(days = days, oneShotDate = date)
+    }
+
+    /** Preview line under the time picker ("8 óra 12 perc múlva"). */
+    fun previewText(draft: Alarm): String? {
+        val now = ZonedDateTime.now(c.clock)
+        val next = NextTriggerCalculator.next(draft.copy(lastTriggeredAt = null), now) ?: return null
+        return "Megszólal: ${HuFormat.relativeDayTime(next, now, _state.value.use24h)} · " +
+            HuFormat.countdown(now.toInstant().toEpochMilli(), next.toInstant().toEpochMilli())
+    }
+
+    fun save() {
+        val draft = _state.value.draft
+        if (_state.value.saving) return
+        if (draft.days.isEmpty) {
+            val date = draft.oneShotDate ?: LocalDate.now(c.clock)
+            val at = ZonedDateTime.of(date, LocalTime.of(draft.hour, draft.minute), c.clock.zone)
+            if (!at.toInstant().isAfter(c.clock.instant())) {
+                _state.update { it.copy(error = "A kiválasztott időpont már elmúlt – válassz későbbi dátumot vagy időt.") }
+                return
+            }
+        }
+        _state.update { it.copy(saving = true) }
+        viewModelScope.launch {
+            val (_, next) = c.engine.save(draft.copy(enabled = true))
+            val message = next?.let { "Az ébresztés ${HuFormat.countdown(System.currentTimeMillis(), it)} szól" }
+                ?: "Ébresztés mentve"
+            _events.emit(EditEvent.Saved(message))
+        }
+    }
+
+    fun delete() {
+        if (_state.value.isNew) return
+        viewModelScope.launch {
+            c.engine.delete(alarmId)
+            _events.emit(EditEvent.Deleted)
+        }
+    }
+}

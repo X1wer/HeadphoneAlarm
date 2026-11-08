@@ -1,0 +1,69 @@
+package hu.ulpifex.fulesebreszto.domain
+
+/**
+ * Reference to an alarm sound: either one of the bundled tones or a user-picked
+ * document (Storage Access Framework content URI).
+ */
+sealed interface SoundRef {
+    val serialized: String
+
+    data class BuiltIn(val key: String) : SoundRef {
+        override val serialized: String get() = PREFIX_BUILTIN + key
+    }
+
+    data class Custom(val uri: String) : SoundRef {
+        override val serialized: String get() = uri
+    }
+
+    companion object {
+        private const val PREFIX_BUILTIN = "builtin:"
+
+        fun parse(value: String?): SoundRef = when {
+            value.isNullOrBlank() -> BuiltInSounds.DEFAULT.ref
+            value.startsWith(PREFIX_BUILTIN) -> {
+                val key = value.removePrefix(PREFIX_BUILTIN)
+                if (BuiltInSounds.find(key) != null) BuiltIn(key) else BuiltInSounds.DEFAULT.ref
+            }
+            else -> Custom(value)
+        }
+    }
+}
+
+data class BuiltInSound(val key: String, val displayName: String, val rawName: String) {
+    val ref: SoundRef.BuiltIn get() = SoundRef.BuiltIn(key)
+}
+
+object BuiltInSounds {
+    val CLASSIC = BuiltInSound("classic", "Klasszikus ébresztés", "classic_alarm")
+    val SOFT = BuiltInSound("soft", "Lágy dallam", "soft_melody")
+    val BEEP = BuiltInSound("beep", "Egyszerű sípolás", "simple_beep")
+    val CHIME = BuiltInSound("chime", "Reggeli harang", "morning_chime")
+
+    val ALL = listOf(CLASSIC, SOFT, BEEP, CHIME)
+    val DEFAULT = CLASSIC
+
+    /** The tone used when a custom file cannot be opened or decoded. */
+    val FALLBACK = CLASSIC
+
+    fun find(key: String): BuiltInSound? = ALL.firstOrNull { it.key == key }
+}
+
+/** Outcome of resolving which sound will actually be played. */
+data class ResolvedSound(val ref: SoundRef, val usedFallback: Boolean, val reason: String? = null)
+
+/**
+ * Decides what to play: the configured sound when it is readable, otherwise the built-in
+ * fallback. [isReadable] is injected so the decision can be tested without Android.
+ */
+object SoundResolver {
+    fun resolve(configured: SoundRef, isReadable: (SoundRef.Custom) -> Boolean): ResolvedSound =
+        when (configured) {
+            is SoundRef.BuiltIn -> ResolvedSound(configured, usedFallback = false)
+            is SoundRef.Custom ->
+                if (runCatching { isReadable(configured) }.getOrDefault(false)) {
+                    ResolvedSound(configured, usedFallback = false)
+                } else {
+                    ResolvedSound(BuiltInSounds.FALLBACK.ref, usedFallback = true, reason = "A hangfájl nem érhető el")
+                }
+        }
+}

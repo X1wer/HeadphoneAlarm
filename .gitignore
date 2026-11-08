@@ -1,0 +1,24 @@
+# Gradle / Android Studio
+.gradle/
+build/
+/app/build/
+/captures/
+.kotlin/
+.idea/
+*.iml
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Signing keys and secrets must never be committed
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+*.p12
+*.pem
+google-services.json
+
+# OS
+.DS_Store
+Thumbs.db

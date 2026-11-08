@@ -1,0 +1,78 @@
+name: Android – tesztek és debug APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Unit tesztek, lint, debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Forráskód letöltése
+        uses: actions/checkout@v7
+
+      - name: JDK 21 telepítése
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Android SDK előkészítése
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 37 platform és build-tools telepítése
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+
+      - name: Gradle beállítása (cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Gradle Wrapper futtathatóvá tétele
+        run: chmod +x gradlew
+
+      - name: Unit tesztek
+        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Debug APK fordítása
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: APK elnevezése
+        run: |
+          VERSION=$(grep -m1 'versionName = ' app/build.gradle.kts | sed -E 's/.*"(.*)".*/\1/')
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/FulesEbreszto-v${VERSION}-debug.apk"
+          ls -l dist
+
+      - name: APK feltöltése artifactként
+        uses: actions/upload-artifact@v7
+        with:
+          name: FulesEbreszto-debug-apk
+          path: dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Teszt- és lint-jelentések feltöltése
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14

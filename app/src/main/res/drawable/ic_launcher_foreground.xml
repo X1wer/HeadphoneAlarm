@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon foreground (108dp canvas, 72dp safe zone): headphones around an alarm bell. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- headband -->
+    <path
+        android:strokeColor="#FF4DD0E1"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M30,62V54A24,24 0,0 1,78 54V62" />
+    <!-- ear cups -->
+    <path
+        android:fillColor="#FF4DD0E1"
+        android:pathData="M30,57h4a5,5 0,0 1,5 5v13a5,5 0,0 1,-5 5h-4a5,5 0,0 1,-5 -5v-13a5,5 0,0 1,5 -5z" />
+    <path
+        android:fillColor="#FF4DD0E1"
+        android:pathData="M74,57h4a5,5 0,0 1,5 5v13a5,5 0,0 1,-5 5h-4a5,5 0,0 1,-5 -5v-13a5,5 0,0 1,5 -5z" />
+    <!-- small alarm clock in the middle -->
+    <path
+        android:strokeColor="#FFE6F4F7"
+        android:strokeWidth="3.5"
+        android:pathData="M54,56m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+    <path
+        android:strokeColor="#FFE6F4F7"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,50V56L58,59" />
+</vector>
