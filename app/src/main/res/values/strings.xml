@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- English (default). Hungarian lives in values-hu/strings.xml. -->
 <resources>
-    <string name="app_name" translatable="false">FülesÉbresztő</string>
+    <string name="app_name">Headphone Alarm</string>
 
     <!-- Common -->
     <string name="back">Back</string>
@@ -180,7 +180,7 @@
     <string name="ch_snooze_desc">Snoozed alarms</string>
     <string name="ch_info_name">Missed and timed-out alarms</string>
     <string name="ch_info_desc">Information when an alarm could not ring or stopped automatically</string>
-    <string name="notif_ring_title">FülesÉbresztő · %1$s</string>
+    <string name="notif_ring_title">Headphone Alarm · %1$s</string>
     <string name="notif_ring_checking">Alarm – checking audio output…</string>
     <string name="notif_ring_text">%1$s – %2$s</string>
     <string name="notif_snooze_title">Snooze – %1$s</string>

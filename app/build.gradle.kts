@@ -19,8 +19,8 @@ android {
         // API 36 meets the current Google Play target requirement. The API 37 target
         // behaviour changes (background audio hardening) have not been verified on hardware yet.
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
