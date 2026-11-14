@@ -4,7 +4,7 @@
 
 A native Android alarm clock whose sound plays **only on connected, allowed headphones**. If no suitable headphones are connected, or the audio route cannot be verified, the phone **only vibrates** – it never plays the alarm on the built-in speaker.
 
-> **Build type:** both the local build and GitHub Actions produce a **debug APK** (signed with a debug key). There is no release signing key in the project, so no release APK is built.
+> **Download:** the signed release APK is on the [Releases page](https://github.com/X1wer/HeadphoneAlarm/releases/latest) (`FulesEbreszto-1.0.apk`). It is also available in the [RepoShelf](https://github.com/X1wer/reposhelf) app catalog, which can install and update it. GitHub Actions still builds a **debug APK** for testing; release signing happens only outside the repository (the key is never stored here).
 
 ---
 
@@ -35,11 +35,13 @@ targetSdk is deliberately 36: the new background-audio restrictions for apps tar
 
 ## 3. Installation
 
-1. Download the APK: GitHub → *Actions* → latest successful “Android – tesztek és debug APK” run → *Artifacts* → `FulesEbreszto-debug-apk` (ZIP containing `FulesEbreszto-v1.0-debug.apk`).
-2. Copy it to the phone and open it. Android asks you to allow installing unknown apps for the app you open it with (e.g. Files).
+1. Download `FulesEbreszto-1.0.apk` from the [latest release](https://github.com/X1wer/HeadphoneAlarm/releases/latest) – or install it with [RepoShelf](https://github.com/X1wer/reposhelf), which also keeps it up to date.
+2. Open the downloaded file on the phone. Android asks you to allow installing unknown apps for the app you open it with (e.g. your browser or Files).
 3. Start **FülesÉbresztő**.
 
-From a computer: `adb install -r FulesEbreszto-v1.0-debug.apk`.
+The release APK is signed with the certificate whose SHA-256 is `7aa8f53bc27116f891e8539e8f0914918356bbb918e6a0261360552e0d67b3d7`. A debug build installed earlier (from GitHub Actions or Android Studio) has a different signature: uninstall it first (its alarms are lost).
+
+From a computer: `adb install -r FulesEbreszto-1.0.apk`. Debug builds for testing: GitHub → *Actions* → latest successful “Android – tesztek és debug APK” run → *Artifacts*.
 
 ## 4. First start and permissions
 

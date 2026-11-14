@@ -4,7 +4,7 @@
 
 Natív Android-ébresztőalkalmazás, amelynek hangja **kizárólag csatlakoztatott és engedélyezett fejhallgatón** szólal meg. Ha nincs megfelelő fejhallgató, vagy a hangkimenet nem igazolható, a telefon **csak rezeg** – a beépített hangszórón soha nem indít ébresztőhangot.
 
-> **Build típusa:** a GitHub Actions és a helyi fordítás **debug APK-t** készít (debug kulccsal aláírva). Release-aláírókulcs nincs a projektben, ezért release APK nem készül.
+> **Letöltés:** az aláírt release APK a [kiadások oldalán](https://github.com/X1wer/HeadphoneAlarm/releases/latest) érhető el (`FulesEbreszto-1.0.apk`). A [RepoShelf](https://github.com/X1wer/reposhelf) alkalmazás katalógusában is megtalálható, onnan telepíthető és frissíthető. A GitHub Actions továbbra is **debug APK-t** készít tesztelésre; a release-aláírás csak a repón kívül történik (a kulcs soha nem kerül ide).
 
 ---
 
@@ -35,11 +35,13 @@ A targetSdk szándékosan 36: az API 37-re célzó alkalmazásokra vonatkozó ú
 
 ## 3. Telepítés
 
-1. Töltsd le az APK-t: GitHub → *Actions* → a legutóbbi sikeres „Android – tesztek és debug APK” futás → *Artifacts* → `FulesEbreszto-debug-apk` (ZIP, benne `FulesEbreszto-v1.0-debug.apk`).
-2. Másold a telefonra, és nyisd meg. Az Android kérni fogja az „ismeretlen forrásból történő telepítés” engedélyezését annál az alkalmazásnál, amellyel megnyitod (pl. Fájlok).
+1. Töltsd le a `FulesEbreszto-1.0.apk` fájlt a [legújabb kiadásból](https://github.com/X1wer/HeadphoneAlarm/releases/latest) – vagy telepítsd a [RepoShelf](https://github.com/X1wer/reposhelf) alkalmazással, amely frissen is tartja.
+2. Nyisd meg a letöltött fájlt a telefonon. Az Android kérni fogja az „ismeretlen forrásból történő telepítés” engedélyezését annál az alkalmazásnál, amellyel megnyitod (pl. böngésző vagy Fájlok).
 3. Telepítés után indítsd el a **FülesÉbresztő**-t.
 
-Fejlesztői gépről: `adb install -r FulesEbreszto-v1.0-debug.apk`.
+A release APK-t az a tanúsítvány írja alá, amelynek SHA-256 ujjlenyomata `7aa8f53bc27116f891e8539e8f0914918356bbb918e6a0261360552e0d67b3d7`. Egy korábban telepített debug build (GitHub Actionsből vagy Android Studióból) más aláírású: előbb távolítsd el (a beállított ébresztők elvesznek).
+
+Fejlesztői gépről: `adb install -r FulesEbreszto-1.0.apk`. Tesztelésre szánt debug build: GitHub → *Actions* → a legutóbbi sikeres „Android – tesztek és debug APK” futás → *Artifacts*.
 
 ## 4. Első indítás és jogosultságok
 
