@@ -6,6 +6,8 @@ enum class RingState {
     TRIGGERED,
     CHECKING_AUDIO,
     PLAYING_HEADPHONES,
+    /** A loud alarm playing on the speaker (alarm stream). */
+    PLAYING_SPEAKER,
     VIBRATING_ONLY,
     SNOOZED,
     DISMISSED,
@@ -14,7 +16,7 @@ enum class RingState {
 
     /** States in which sound or vibration may be running and the user can act. */
     val isRinging: Boolean
-        get() = this == TRIGGERED || this == CHECKING_AUDIO || this == PLAYING_HEADPHONES ||
+        get() = this == TRIGGERED || this == CHECKING_AUDIO || this == PLAYING_HEADPHONES || this == PLAYING_SPEAKER ||
             this == VIBRATING_ONLY || this == ERROR
 
     val isTerminal: Boolean get() = this == DISMISSED || this == TIMED_OUT
@@ -27,13 +29,20 @@ enum class SilentReason {
     ROUTE_UNVERIFIED,
     SOUND_FAILED,
     VOLUME_ZERO,
+
+    /** A playlist alarm played its list to the end and was set to keep vibrating. */
+    PLAYLIST_ENDED,
 }
 
 sealed interface RingEvent {
     data object Schedule : RingEvent
     data object Trigger : RingEvent
     data object AudioCheckStarted : RingEvent
-    data class AudioVerified(val deviceName: String, val systemVolumeZero: Boolean = false) : RingEvent
+    data class AudioVerified(
+        val deviceName: String,
+        val systemVolumeZero: Boolean = false,
+        val speaker: Boolean = false,
+    ) : RingEvent
     data class AudioUnavailable(val reason: SilentReason) : RingEvent
     data object Snooze : RingEvent
     data object Dismiss : RingEvent
@@ -102,7 +111,7 @@ class AlarmStateMachine(private val vibrateWithHeadphones: Boolean) {
             }
 
             is RingEvent.AudioVerified -> if (state.isRinging) {
-                state = RingState.PLAYING_HEADPHONES
+                state = if (event.speaker) RingState.PLAYING_SPEAKER else RingState.PLAYING_HEADPHONES
                 silentReason = null
                 audioDevice = event.deviceName
                 systemVolumeZero = event.systemVolumeZero

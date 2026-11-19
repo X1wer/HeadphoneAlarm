@@ -18,6 +18,9 @@ Natív Android-ébresztőalkalmazás, amelynek hangja **kizárólag csatlakoztat
 - **Teljes képernyős ébresztés** lezárt képernyőn is; felfelé húzás = leállítás, lefelé húzás = szundi; külön gombok és képernyőolvasó-műveletek; értesítési műveletek.
 - **Beépített hangok** (4 db, saját szintetizálású, jogtiszta) és **saját hangfájlok** (MP3, WAV, OGG, M4A … a rendszer fájlválasztójával, tartós olvasási joggal).
 - Pontos időzítés `AlarmManager.setAlarmClock()`-kal; helyreállítás újraindítás (a feloldás előtt is), frissítés, kézi időállítás és időzóna-váltás után.
+- **Saját szín minden ébresztésnek** (10 szín vagy „Automatikus”): a lista kártyája, a kerete és az ébresztőképernyő is ezt a színt kapja.
+- **Hangos ébresztés (1.1.0):** ébresztésenként választható, hogy csak fejhallgatón szóljon (alapértelmezés), vagy hagyományos módon, hangosan a telefon hangszóróján. A hangos ébresztés kártyáján **vastag piros keret** van, a színe alapból piros.
+- **Zengő lejátszási lista mint ébresztőhang (1.1.0):** a saját Zengő zenelejátszó (1.7.0-tól) bármelyik listája vagy a Kedvencek szólhat ébresztésként. Alapból a Zengőben mentett keverési/ismétlési módot követi, de beállítható a sorrend (sorban / keverve), hogy mi történjen a lista végén (újrakezdés, utolsó dal ismétlése, beépített hang, csak rezgés, leállás), és hogy melyik dallal kezdődjön. Ezek az ébresztések **cikk-cakkos keretet** kapnak.
 - **Nyelvek: magyar és angol.** Az alkalmazás a telefon nyelvét követi (magyar telefonon magyar, minden más nyelven angol), és a *Beállítások → Nyelv* pontban átállítható.
 - Sötét (alapértelmezett), világos és rendszertéma; 24 órás formátum kapcsolható; nagy betűméretre igazodó felület.
 - Teljesen offline: nincs `INTERNET` jogosultság, reklám, analitika vagy fiók.
@@ -117,6 +120,10 @@ AlarmManager.setAlarmClock ──▶ AlarmReceiver ──▶ AlarmRingService (f
 - **Maximális csörgési idő** (alapértelmezés 10 perc) után az ébresztés leáll, és értesítés jelzi.
 
 ## 10. Ismert korlátozások
+
+- A **hangos ébresztés** szándékosan a telefon hangszóróján szól (riasztási hangfolyam); erre a fejhallgatós garancia nem vonatkozik. Hangereje a telefon ébresztési hangerejét követi.
+- A **Zengő-lista** csak akkor szól, ha a Zengő 1.7.0 vagy újabb telepítve van, és a hozzáférést megadtad (Ébresztőhangok → „Hozzáférés a Zengő listáihoz”). Ha a Zengő nem érhető el, a lista üres, vagy a telefon újraindítás után még nem volt feloldva, a beépített ébresztőhang szól. A nem lejátszható dalokat az ébresztés átugorja, és abban az ébresztésben nem próbálja újra.
+- Ha a Zengő ismétlési módja „Ismétlés ki” vagy „Leállás a szám végén”, a „Zengő beállítása szerint” végű ébresztés a lista (illetve az első dal) után csak rezeg tovább, nem hallgat el teljesen.
 
 - **Valódi készüléken – különösen Bluetooth- és vezetékes fejhallgatóval – még nem volt tesztelve.** Az eszközszintű ellenőrzés Android 17 emulátoron történt, ahol nincs fejhallgató; így a hangszórómentes működést fizikailag nem lehetett mérni.
 - A hangkimenet biztonságának korlátai: lásd a következő szakaszt.

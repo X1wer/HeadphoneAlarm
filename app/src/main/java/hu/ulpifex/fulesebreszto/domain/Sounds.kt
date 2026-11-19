@@ -15,11 +15,23 @@ sealed interface SoundRef {
         override val serialized: String get() = uri
     }
 
+    /** A playlist (or the Favourites, id 0) of the Zengő music player, read through its provider. */
+    data class Zengo(val authority: String, val playlistId: Long) : SoundRef {
+        override val serialized: String get() = "$PREFIX_ZENGO$authority/$playlistId"
+    }
+
     companion object {
         private const val PREFIX_BUILTIN = "builtin:"
+        private const val PREFIX_ZENGO = "zengo:"
 
         fun parse(value: String?): SoundRef = when {
             value.isNullOrBlank() -> BuiltInSounds.DEFAULT.ref
+            value.startsWith(PREFIX_ZENGO) -> {
+                val rest = value.removePrefix(PREFIX_ZENGO)
+                val authority = rest.substringBeforeLast('/', "")
+                val id = rest.substringAfterLast('/').toLongOrNull()
+                if (authority.isNotBlank() && id != null && id >= 0) Zengo(authority, id) else BuiltInSounds.DEFAULT.ref
+            }
             value.startsWith(PREFIX_BUILTIN) -> {
                 val key = value.removePrefix(PREFIX_BUILTIN)
                 if (BuiltInSounds.find(key) != null) BuiltIn(key) else BuiltInSounds.DEFAULT.ref
@@ -63,6 +75,8 @@ object SoundResolver {
     fun resolve(configured: SoundRef, isReadable: (SoundRef.Custom) -> Boolean): ResolvedSound =
         when (configured) {
             is SoundRef.BuiltIn -> ResolvedSound(configured, usedFallback = false)
+            // Playlists are expanded into their songs before playback; a bare one cannot be played.
+            is SoundRef.Zengo -> ResolvedSound(BuiltInSounds.FALLBACK.ref, usedFallback = true)
             is SoundRef.Custom ->
                 if (runCatching { isReadable(configured) }.getOrDefault(false)) {
                     ResolvedSound(configured, usedFallback = false)

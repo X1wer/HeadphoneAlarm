@@ -19,6 +19,11 @@ data class RingUiState(
     val systemVolumeZero: Boolean,
     val usedFallbackSound: Boolean,
     val snoozeMinutes: Int,
+    /** Colour of the (primary) alarm, used to tint the ringing screen. */
+    val colorArgb: Int = 0xFF4DD0E1.toInt(),
+    val loud: Boolean = false,
+    /** Song currently playing (playlist alarms). */
+    val nowPlaying: String? = null,
     val finished: FinishKind? = null,
 ) {
     val extraAlarms: Int get() = (alarmIds.size - 1).coerceAtLeast(0)

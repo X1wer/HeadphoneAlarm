@@ -197,6 +197,14 @@ fun AlarmEditScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // Output: headphones only or a loud alarm on the speaker.
+            SectionTitle(stringResource(R.string.section_output))
+            OutputSelector(draft.output, vm::setOutput)
+
+            // Colour of the alarm in the app.
+            SectionTitle(stringResource(R.string.section_color))
+            ColorPicker(draft, vm::setColor)
+
             // C. Repeat
             SectionTitle(stringResource(R.string.section_repeat))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -237,11 +245,23 @@ fun AlarmEditScreen(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.choose_sound)) },
                 supportingContent = { Text(soundName(draft)) },
-                leadingContent = { Icon(AppIcons.Headphones, contentDescription = null) },
+                leadingContent = {
+                    Icon(if (draft.isLoud) AppIcons.Speaker else AppIcons.Headphones, contentDescription = null)
+                },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier.clickable(onClickLabel = stringResource(R.string.open_sound_picker)) { onPickSound(draft.sound.serialized) },
             )
+            if (draft.isPlaylist) {
+                SectionTitle(stringResource(R.string.section_playlist))
+                PlaylistOptionsSection(
+                    alarm = draft,
+                    onOrder = vm::setPlaylistOrder,
+                    onEnd = vm::setPlaylistEnd,
+                    onStartTrack = vm::setStartTrack,
+                    loadTracks = vm::playlistTracks,
+                )
+            }
 
             // E. Volume
             SectionTitle(stringResource(R.string.section_volume))
@@ -264,7 +284,7 @@ fun AlarmEditScreen(
                     style = MaterialTheme.typography.bodySmall)
             }
             Text(
-                stringResource(R.string.volume_note),
+                stringResource(if (draft.isLoud) R.string.volume_note_speaker else R.string.volume_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -272,8 +292,10 @@ fun AlarmEditScreen(
             // F. Vibration
             SectionTitle(stringResource(R.string.section_vibration))
             ListItem(
-                headlineContent = { Text(stringResource(R.string.vibrate_with_headphones)) },
-                supportingContent = { Text(stringResource(R.string.vibrate_note)) },
+                headlineContent = {
+                    Text(stringResource(if (draft.isLoud) R.string.vibrate_with_speaker else R.string.vibrate_with_headphones))
+                },
+                supportingContent = if (draft.isLoud) null else ({ Text(stringResource(R.string.vibrate_note)) }),
                 leadingContent = { Icon(AppIcons.Vibration, contentDescription = null) },
                 trailingContent = {
                     Switch(checked = draft.vibrateWithHeadphones, onCheckedChange = vm::setVibrateWithHeadphones)

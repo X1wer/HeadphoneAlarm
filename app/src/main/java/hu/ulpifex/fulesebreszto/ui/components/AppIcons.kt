@@ -145,6 +145,27 @@ object AppIcons {
         }
     }
 
+    /** Loudspeaker with sound waves (loud alarms). */
+    val Speaker: ImageVector = icon("Speaker") {
+        fill {
+            moveTo(3f, 9f)
+            horizontalLineTo(7f)
+            lineTo(12f, 4.5f)
+            verticalLineTo(19.5f)
+            lineTo(7f, 15f)
+            horizontalLineTo(3f)
+            close()
+        }
+        stroke {
+            moveTo(15.5f, 8.5f)
+            arcTo(5f, 5f, 0f, false, true, 15.5f, 15.5f)
+        }
+        stroke {
+            moveTo(18.5f, 5.5f)
+            arcTo(9f, 9f, 0f, false, true, 18.5f, 18.5f)
+        }
+    }
+
     val Stop: ImageVector = icon("Stop") {
         fill { roundRect(6f, 6f, 12f, 12f, 2f) }
     }

@@ -25,6 +25,12 @@ data class Alarm(
     val vibrateWithHeadphones: Boolean = false,
     val snoozeMinutes: Int = 10,
     val maxRingMinutes: Int = 10,
+    /** Where the alarm may sound: only on verified headphones (default) or loudly on the speaker. */
+    val output: AlarmOutput = AlarmOutput.HEADPHONES,
+    /** Colour the alarm is shown in (ARGB); null means the default colour of its [output]. */
+    val color: Int? = null,
+    /** Playback options, used only when [sound] is a Zengő playlist. */
+    val playlist: PlaylistOptions = PlaylistOptions(),
     /** The occurrence the main trigger is currently scheduled for. */
     val nextTriggerAt: Long? = null,
     /** The last occurrence that actually started ringing; it must never ring twice. */
@@ -34,6 +40,11 @@ data class Alarm(
     val createdAt: Long = 0,
 ) {
     val isRepeating: Boolean get() = !days.isEmpty
+    val isLoud: Boolean get() = output == AlarmOutput.SPEAKER
+    val isPlaylist: Boolean get() = sound is SoundRef.Zengo
+
+    /** The colour actually shown: the chosen one, or red for loud and teal for headphone alarms. */
+    val displayColor: Int get() = color ?: AlarmColors.defaultFor(output)
 
     companion object {
         const val MIN_SNOOZE = 1

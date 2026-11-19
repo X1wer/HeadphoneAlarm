@@ -11,7 +11,10 @@ import android.os.Looper
 import android.os.PowerManager
 import hu.ulpifex.fulesebreszto.AppContainer
 import hu.ulpifex.fulesebreszto.FulesApp
+import hu.ulpifex.fulesebreszto.audio.AlarmAudio
+import hu.ulpifex.fulesebreszto.audio.AlarmSoundSource
 import hu.ulpifex.fulesebreszto.audio.AudioPathState
+import hu.ulpifex.fulesebreszto.audio.SpeakerAlarmPlayer
 import hu.ulpifex.fulesebreszto.audio.SafeHeadphonePlayer
 import hu.ulpifex.fulesebreszto.audio.VibrationController
 import hu.ulpifex.fulesebreszto.domain.Alarm
@@ -92,7 +95,10 @@ class AlarmRingService : Service() {
         scope.launch {
             val resolved = try {
                 withContext(Dispatchers.IO) {
-                    container.engine.onTrigger(id, kind, occurrence)?.let { it to container.devices.allowedKeysNow() }
+                    container.engine.onTrigger(id, kind, occurrence)?.let { alarm ->
+                        // Expanding a Zengő playlist reads its provider, so it happens here, off the main thread.
+                        Triple(alarm, container.devices.allowedKeysNow(), AlarmSounds.sourceFor(alarm, container.zengo, container.log::log))
+                    }
                 }
             } catch (e: Exception) {
                 container.log.log("trigger handling failed: ${e.javaClass.simpleName}")
@@ -103,19 +109,20 @@ class AlarmRingService : Service() {
             when {
                 resolved == null -> Unit
                 current != null && current.isRinging -> current.merge(resolved.first)
-                else -> startSession(resolved.first, resolved.second)
+                else -> startSession(resolved.first, resolved.second, resolved.third)
             }
             StartupWakeLock.release()
             stopIfIdle()
         }
     }
 
-    private fun startSession(alarm: Alarm, allowedKeys: Set<String>) {
+    private fun startSession(alarm: Alarm, allowedKeys: Set<String>, sound: AlarmSoundSource) {
         acquireWakeLock(alarm.maxRingMinutes)
         val s = RingSession(
             context = this,
             primary = alarm,
             allowedKeys = allowedKeys,
+            sound = sound,
             container = container,
             scope = scope,
             onChanged = { ui ->
@@ -189,6 +196,7 @@ private class RingSession(
     context: Context,
     primary: Alarm,
     allowedKeys: Set<String>,
+    private val sound: AlarmSoundSource,
     private val container: AppContainer,
     private val scope: CoroutineScope,
     private val onChanged: (RingUiState) -> Unit,
@@ -199,12 +207,18 @@ private class RingSession(
     private val primary: Alarm get() = alarms.first()
     private val machine = AlarmStateMachine(primary.vibrateWithHeadphones)
     private val vibration = VibrationController(context)
-    private val player = SafeHeadphonePlayer(
-        context = context,
-        allowedKeys = { allowedKeys },
-        log = container.log::log,
-        listener = { state -> handler.post { onAudio(state) } },
-    )
+    /** Headphone alarms use the fail-closed player; loud alarms the plain alarm-stream player. */
+    private val player: AlarmAudio = if (primary.isLoud) {
+        SpeakerAlarmPlayer(context, container.log::log) { state -> handler.post { onAudio(state) } }
+    } else {
+        SafeHeadphonePlayer(
+            context = context,
+            allowedKeys = { allowedKeys },
+            log = container.log::log,
+            listener = { state -> handler.post { onAudio(state) } },
+        )
+    }
+    private var nowPlaying: String? = null
     private val timeText = LocalTime.now().let { AppLocale.timeFormat(context).time(it.hour, it.minute) }
     private val timeout = Runnable { dispatch(RingEvent.Timeout) }
     private val engineJobs = mutableListOf<Job>()
@@ -242,9 +256,18 @@ private class RingSession(
             AudioPathState.Checking -> dispatch(RingEvent.AudioCheckStarted)
             is AudioPathState.Audible -> {
                 usedFallback = state.usedFallbackSound
-                dispatch(RingEvent.AudioVerified(state.deviceName, state.systemVolumeZero))
+                nowPlaying = state.nowPlaying
+                dispatch(RingEvent.AudioVerified(state.deviceName, state.systemVolumeZero, state.speaker))
             }
-            is AudioPathState.Silent -> dispatch(RingEvent.AudioUnavailable(state.reason))
+            is AudioPathState.Silent -> {
+                nowPlaying = null
+                dispatch(RingEvent.AudioUnavailable(state.reason))
+            }
+            is AudioPathState.SourceEnded -> {
+                nowPlaying = null
+                container.log.log("playlist ended (stopAlarm=${state.stopAlarm})")
+                dispatch(if (state.stopAlarm) RingEvent.Dismiss else RingEvent.AudioUnavailable(SilentReason.PLAYLIST_ENDED))
+            }
         }
     }
 
@@ -255,7 +278,7 @@ private class RingSession(
                 if (primary.volumePercent <= 0) {
                     handler.post { dispatch(RingEvent.AudioUnavailable(SilentReason.VOLUME_ZERO)) }
                 } else {
-                    player.start(primary.sound, primary.volumePercent, FADE_IN_MS)
+                    player.start(sound, primary.volumePercent, FADE_IN_MS)
                 }
             RingEffect.StopAudio -> player.stop()
             RingEffect.StartVibration -> vibration.startAlarmPattern()
@@ -295,6 +318,9 @@ private class RingSession(
             systemVolumeZero = machine.systemVolumeZero,
             usedFallbackSound = usedFallback,
             snoozeMinutes = primary.snoozeMinutes,
+            colorArgb = primary.displayColor,
+            loud = primary.isLoud,
+            nowPlaying = nowPlaying,
             finished = finished,
         )
         RingSessionState.publish(ui)

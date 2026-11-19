@@ -70,6 +70,9 @@ import java.time.Instant
 import hu.ulpifex.fulesebreszto.ui.PermissionStatus
 import hu.ulpifex.fulesebreszto.ui.Permissions
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
+import hu.ulpifex.fulesebreszto.ui.components.LoudRed
+import hu.ulpifex.fulesebreszto.ui.components.alarmFrame
+import androidx.compose.ui.draw.clip
 import hu.ulpifex.fulesebreszto.ui.components.HeadphoneStatusChip
 import hu.ulpifex.fulesebreszto.ui.theme.LocalStatusColors
 import hu.ulpifex.fulesebreszto.ui.theme.TimeTextStyle
@@ -236,12 +239,21 @@ private fun AlarmCard(
     val toggleDescription = stringResource(R.string.toggle_alarm_cd, time, alarm.label)
     val contentAlpha = if (alarm.enabled) 1f else 0.55f
 
+    val frame = alarmFrame(alarm)
+    val soundLine = when {
+        alarm.isPlaylist -> stringResource(R.string.card_playlist_sound, soundName(alarm))
+        alarm.isLoud -> stringResource(R.string.card_loud_sound, soundName(alarm))
+        else -> stringResource(R.string.headphone_alarm_sound, soundName(alarm))
+    }
+
     Box {
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = if (alarm.enabled) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = frame.shape,
+            color = frame.container,
+            border = frame.border,
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(frame.shape)
                 .combinedClickable(
                     onClickLabel = stringResource(R.string.action_edit),
                     onLongClickLabel = stringResource(R.string.action_copy_or_delete),
@@ -257,19 +269,24 @@ private fun AlarmCard(
                     )
                 },
         ) {
-            Row(Modifier.padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(frame.padding), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).alpha(contentAlpha)) {
                     Text(time, style = TimeTextStyle)
                     Text(alarm.label, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(repeat, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(repeat, style = MaterialTheme.typography.bodyMedium, color = frame.accent)
                     if (alarm.snoozeUntil != null) {
                         Text(stringResource(R.string.snoozing), style = MaterialTheme.typography.bodySmall, color = LocalStatusColors.current.warning)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                        Icon(AppIcons.Headphones, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            if (alarm.isLoud) AppIcons.Speaker else AppIcons.Headphones,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (alarm.isLoud) LoudRed else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            stringResource(R.string.headphone_alarm_sound, soundName(alarm)),
+                            soundLine,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,

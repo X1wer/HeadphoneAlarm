@@ -68,6 +68,7 @@ class SoundPreview(private val context: Context, private val container: AppConta
                     (if (state.usedFallbackSound) text(R.string.preview_fallback_suffix) else ""),
                 audible = true,
             )
+            is AudioPathState.SourceEnded -> current.copy(playingRef = null, audible = false, message = text(R.string.preview_ended))
             is AudioPathState.Silent -> {
                 if (!player.isRunning) {
                     current.copy(playingRef = null, audible = false)
@@ -81,6 +82,7 @@ class SoundPreview(private val context: Context, private val container: AppConta
                                 text(R.string.preview_unverified, state.detail?.let { text(it.textRes()) } ?: text(R.string.unknown))
                             SilentReason.SOUND_FAILED -> text(R.string.preview_failed)
                             SilentReason.VOLUME_ZERO -> text(R.string.preview_volume_zero)
+                            SilentReason.PLAYLIST_ENDED -> text(R.string.preview_ended)
                         },
                     )
                 }

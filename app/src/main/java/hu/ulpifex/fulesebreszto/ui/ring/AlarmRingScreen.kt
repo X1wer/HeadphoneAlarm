@@ -76,6 +76,7 @@ import hu.ulpifex.fulesebreszto.domain.RingState
 import hu.ulpifex.fulesebreszto.domain.SwipeAction
 import hu.ulpifex.fulesebreszto.domain.SwipeGestureDetector
 import hu.ulpifex.fulesebreszto.ui.components.AppIcons
+import hu.ulpifex.fulesebreszto.ui.components.LoudRed
 import hu.ulpifex.fulesebreszto.ui.theme.LocalStatusColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -148,6 +149,7 @@ fun AlarmRingScreen(
             delay(5_000)
         }
     }
+    val accent = Color(ui?.colorArgb ?: 0xFF4DD0E1.toInt())
     val pulse by rememberInfiniteTransition(label = "pulse").animateFloat(
         initialValue = 1f,
         targetValue = 1.08f,
@@ -213,6 +215,16 @@ fun AlarmRingScreen(
             )
             Spacer(Modifier.height(12.dp))
             if (ui != null) AudioStatus(ui)
+            ui?.nowPlaying?.let { song ->
+                Text(
+                    stringResource(R.string.ring_now_playing, song),
+                    color = Color(0xFFE1E8EE),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
 
             // Gesture guidance (the whole screen accepts the gesture).
             Column(
@@ -237,7 +249,7 @@ fun AlarmRingScreen(
                             when {
                                 hint == SwipeAction.DISMISS && progress >= 1f -> Color(0xFF2E7D5B)
                                 hint == SwipeAction.SNOOZE && progress >= 1f -> Color(0xFF2B5C8A)
-                                else -> Color(0x334DD0E1)
+                                else -> accent.copy(alpha = 0.22f)
                             },
                             CircleShape,
                         ),
@@ -296,6 +308,8 @@ fun AlarmRingScreen(
 private fun AudioStatus(ui: RingUiState) {
     val status = LocalStatusColors.current
     val (icon, color) = when {
+        ui.state == RingState.PLAYING_SPEAKER && !ui.systemVolumeZero -> AppIcons.Speaker to LoudRed
+        ui.state == RingState.PLAYING_SPEAKER -> AppIcons.Speaker to status.warning
         ui.state == RingState.PLAYING_HEADPHONES && !ui.systemVolumeZero -> AppIcons.Headphones to status.success
         ui.state == RingState.PLAYING_HEADPHONES -> AppIcons.Headphones to status.warning
         ui.state == RingState.TRIGGERED || ui.state == RingState.CHECKING_AUDIO -> AppIcons.Headphones to Color(0xFFB7C6D1)

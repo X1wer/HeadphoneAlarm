@@ -18,6 +18,16 @@
     <!-- Only used as a fallback type if the system-exempted alarm service type is refused. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+    <!-- Zengő (Orotund) playlists as alarm sounds: a permission defined by Zengő, which the user
+         grants in the sound picker. Release and debug builds of Zengő have their own names. -->
+    <uses-permission android:name="io.github.x1wer.szabadzene.permission.ALARM_PLAYLISTS" />
+    <uses-permission android:name="io.github.x1wer.szabadzene.debug.permission.ALARM_PLAYLISTS" />
+
+    <queries>
+        <provider android:authorities="io.github.x1wer.szabadzene.alarmplaylists" />
+        <provider android:authorities="io.github.x1wer.szabadzene.debug.alarmplaylists" />
+    </queries>
+
     <!-- No INTERNET and no Bluetooth permissions: the app is fully offline and identifies
          headphones through AudioManager only. -->
 

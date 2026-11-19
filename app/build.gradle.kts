@@ -19,8 +19,8 @@ android {
         // API 36 meets the current Google Play target requirement. The API 37 target
         // behaviour changes (background audio hardening) have not been verified on hardware yet.
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -82,6 +82,11 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    // Room schemas for MigrationTestHelper.
+    sourceSets {
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+    }
+
     lint {
         abortOnError = true
         checkReleaseBuilds = false
@@ -99,6 +104,12 @@ ksp {
 }
 
 dependencies {
+    constraints {
+        // Navigation brings kotlinx-serialization 1.7.3, but room-testing (MigrationTest) needs at least 1.8,
+        // and instrumented tests run against the app's own runtime versions.
+        implementation(libs.kotlinx.serialization.core)
+        implementation(libs.kotlinx.serialization.json)
+    }
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

@@ -14,6 +14,7 @@ import hu.ulpifex.fulesebreszto.data.DiagnosticLog
 import hu.ulpifex.fulesebreszto.data.SettingsRepository
 import hu.ulpifex.fulesebreszto.data.db.AppDatabase
 import hu.ulpifex.fulesebreszto.i18n.AppLocale
+import hu.ulpifex.fulesebreszto.integration.ZengoClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,6 +52,7 @@ class AppContainer(app: Context) {
     val notifications = AlarmNotifications(app)
     val alarmClock = AndroidAlarmClock(app, log::log)
     val headphones = HeadphoneMonitor(app, devices, appScope)
+    val zengo = ZengoClient(app)
 
     val engine = AlarmEngine(
         store = alarms,

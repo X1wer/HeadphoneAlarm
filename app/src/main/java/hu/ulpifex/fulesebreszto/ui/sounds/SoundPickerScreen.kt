@@ -38,6 +38,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +76,15 @@ fun SoundPickerScreen(
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.addCustom(uri)
     }
+
+    val zengo by vm.zengo.collectAsStateWithLifecycle()
+    var denied by remember { mutableStateOf(emptySet<String>()) }
+    var asked by remember { mutableStateOf<String?>(null) }
+    val zengoPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        asked?.let { if (!granted) denied = denied + it }
+        vm.refreshZengo()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshZengo() }
 
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
     DisposableEffect(Unit) { onDispose { vm.stopPreview() } }
@@ -142,6 +155,16 @@ fun SoundPickerScreen(
                     onRemove = { vm.removeCustom(sound) },
                 )
             }
+            zengoPlaylists(
+                sections = zengo,
+                denied = denied,
+                currentRef = currentRef,
+                onGrant = { app ->
+                    asked = app.permission
+                    zengoPermission.launch(app.permission)
+                },
+                onSelected = onSelected,
+            )
         }
     }
 }

@@ -20,7 +20,6 @@ import hu.ulpifex.fulesebreszto.R
 import hu.ulpifex.fulesebreszto.domain.BuiltInSounds
 import hu.ulpifex.fulesebreszto.domain.SilentReason
 import hu.ulpifex.fulesebreszto.domain.SoundRef
-import hu.ulpifex.fulesebreszto.domain.SoundResolver
 import hu.ulpifex.fulesebreszto.domain.VolumeCurve
 
 /** What the player can currently guarantee about the audio path. */
@@ -32,9 +31,16 @@ sealed interface AudioPathState {
         val deviceKind: OutputKind,
         val systemVolumeZero: Boolean,
         val usedFallbackSound: Boolean,
+        /** Song currently playing (playlist alarms). */
+        val nowPlaying: String? = null,
+        /** True for the loud speaker player, which does not restrict the route. */
+        val speaker: Boolean = false,
     ) : AudioPathState
 
     data class Silent(val reason: SilentReason, val detail: UnverifiedReason? = null) : AudioPathState
+
+    /** The source has nothing more to play (end of a playlist). */
+    data class SourceEnded(val stopAlarm: Boolean) : AudioPathState
 }
 
 /**
@@ -46,6 +52,9 @@ sealed interface AudioPathState {
  * removal, BECOMING_NOISY, routing changes and focus loss mute it synchronously first and
  * re-evaluate afterwards. A 250 ms watchdog re-checks the route while a player exists.
  *
+ * Playlist songs each get a fresh muted player that is verified the same way before it becomes
+ * audible; the short gap between songs is not reported as a route problem.
+ *
  * Must be used from the main thread.
  */
 class SafeHeadphonePlayer(
@@ -55,7 +64,7 @@ class SafeHeadphonePlayer(
     private val listener: (AudioPathState) -> Unit,
     /** Called when playback ends by itself (max duration reached or a non-looping sound finished). */
     private val onAutoStop: () -> Unit = {},
-) {
+) : AlarmAudio {
     private val audioManager = context.getSystemService(AudioManager::class.java)
     private val handler = Handler(Looper.getMainLooper())
 
@@ -65,18 +74,17 @@ class SafeHeadphonePlayer(
     private var target: OutputDevice? = null
     private var audible = false
     private var everAudible = false
+    private var transitioning = false
     private var mutedSince = 0L
     private var currentGain = 0f
     private var targetGain = 0f
     private var fadeMs = 0L
-    private var sound: SoundRef = BuiltInSounds.DEFAULT.ref
-    private var forceFallback = false
-    private var usingFallback = false
+    private var source: AlarmSoundSource = SingleSoundSource(BuiltInSounds.DEFAULT.ref)
+    private var ended = false
     private var fatalSoundError = false
     private var focusLost = false
     private var focusRequest: AudioFocusRequest? = null
     private var lastReported: AudioPathState? = null
-    private var loop = true
     private var stopAt = 0L
 
     private val routingListener = AudioRouting.OnRoutingChangedListener {
@@ -148,21 +156,25 @@ class SafeHeadphonePlayer(
         }
     }
 
-    val isRunning: Boolean get() = running
+    override val isRunning: Boolean get() = running
+
+    /** Single-sound convenience (sound picker and settings test playback). */
+    fun start(sound: SoundRef, volumePercent: Int, fadeInMs: Long, loop: Boolean = true, maxDurationMs: Long = 0) =
+        start(SingleSoundSource(sound, loops = loop), volumePercent, fadeInMs, maxDurationMs)
 
     /**
      * @param maxDurationMs stop automatically after this time (0 = until [stop]).
      */
-    fun start(sound: SoundRef, volumePercent: Int, fadeInMs: Long, loop: Boolean = true, maxDurationMs: Long = 0) {
+    override fun start(source: AlarmSoundSource, volumePercent: Int, fadeInMs: Long, maxDurationMs: Long) {
         if (running) stop()
         running = true
-        this.sound = sound
-        this.loop = loop
+        this.source = source
         targetGain = VolumeCurve.gain(volumePercent)
         fadeMs = fadeInMs
-        forceFallback = false
+        ended = false
         fatalSoundError = false
         everAudible = false
+        transitioning = false
         lastReported = null
         stopAt = if (maxDurationMs > 0) SystemClock.elapsedRealtime() + maxDurationMs else 0
         audioManager.registerAudioDeviceCallback(deviceCallback, handler)
@@ -176,7 +188,7 @@ class SafeHeadphonePlayer(
         handler.postDelayed(watchdog, WATCHDOG_MS)
     }
 
-    fun stop() {
+    override fun stop() {
         if (!running && player == null) return
         running = false
         handler.removeCallbacks(watchdog)
@@ -190,7 +202,7 @@ class SafeHeadphonePlayer(
     }
 
     private fun evaluate(trigger: String) {
-        if (!running) return
+        if (!running || ended) return
         if (fatalSoundError) {
             report(AudioPathState.Silent(SilentReason.SOUND_FAILED))
             return
@@ -209,6 +221,7 @@ class SafeHeadphonePlayer(
             PathDecision.NoTarget -> {
                 muteNow("no target")
                 releasePlayer()
+                transitioning = false
                 report(AudioPathState.Silent(if (everAudible) SilentReason.OUTPUT_LOST else SilentReason.NO_HEADPHONES))
             }
 
@@ -218,8 +231,8 @@ class SafeHeadphonePlayer(
                 val info = pairs.first { it.first.id == decision.target.id }.second
                 if (createMutedPlayer(decision.target, info)) {
                     log("player created for ${decision.target.kind} ($trigger)")
-                    report(AudioPathState.Checking)
-                } else {
+                    if (!transitioning) report(AudioPathState.Checking)
+                } else if (!ended) {
                     report(AudioPathState.Silent(SilentReason.SOUND_FAILED))
                 }
             }
@@ -229,6 +242,7 @@ class SafeHeadphonePlayer(
                     audible = true
                     val firstTime = !everAudible
                     everAudible = true
+                    transitioning = false
                     currentGain = 0f
                     if (!firstTime) fadeMs = RECOVERY_FADE_MS
                     log("route verified: ${decision.target.kind}")
@@ -240,7 +254,8 @@ class SafeHeadphonePlayer(
                         deviceName = decision.target.name,
                         deviceKind = decision.target.kind,
                         systemVolumeZero = AudioDevices.mediaVolumePercent(audioManager) == 0,
-                        usedFallbackSound = usingFallback,
+                        usedFallbackSound = source.usedFallback,
+                        nowPlaying = source.currentTitle,
                     ),
                 )
             }
@@ -248,15 +263,19 @@ class SafeHeadphonePlayer(
             is PathDecision.StayMuted -> {
                 muteNow("unverified: ${decision.reason}")
                 val waited = SystemClock.elapsedRealtime() - mutedSince
-                if (everAudible || waited >= CHECK_GRACE_MS) {
-                    val reason = if (decision.reason == UnverifiedReason.TARGET_DISCONNECTED) {
-                        SilentReason.OUTPUT_LOST
-                    } else {
-                        SilentReason.ROUTE_UNVERIFIED
+                val inGrace = waited < CHECK_GRACE_MS && (transitioning || !everAudible)
+                when {
+                    inGrace && transitioning -> Unit // between two songs: not a route problem (yet)
+                    inGrace -> report(AudioPathState.Checking)
+                    else -> {
+                        transitioning = false
+                        val reason = if (decision.reason == UnverifiedReason.TARGET_DISCONNECTED) {
+                            SilentReason.OUTPUT_LOST
+                        } else {
+                            SilentReason.ROUTE_UNVERIFIED
+                        }
+                        report(AudioPathState.Silent(reason, decision.reason))
                     }
-                    report(AudioPathState.Silent(reason, decision.reason))
-                } else {
-                    report(AudioPathState.Checking)
                 }
             }
         }
@@ -271,61 +290,95 @@ class SafeHeadphonePlayer(
         return listOfNotNull(runCatching { p.routedDevice }.getOrNull()?.let(AudioDevices::toOutput))
     }
 
+    /** Creates a muted player for the source's current sound; broken sounds are skipped. */
     private fun createMutedPlayer(device: OutputDevice, info: AudioDeviceInfo): Boolean {
-        val resolved = if (forceFallback) {
-            SoundResolver.resolve(BuiltInSounds.FALLBACK.ref) { false }.copy(usedFallback = true)
-        } else {
-            SoundResolver.resolve(sound) { canOpen(it.uri) }
-        }
-        if (resolved.usedFallback && !usingFallback) log("custom sound unavailable, using built-in fallback")
-        usingFallback = resolved.usedFallback
-        val mp = MediaPlayer()
-        return try {
-            mp.setAudioAttributes(AudioDevices.MEDIA_ATTRIBUTES)
-            setSource(mp, resolved.ref)
-            mp.isLooping = loop
-            mp.setVolume(0f, 0f)
-            if (!mp.setPreferredDevice(info)) log("setPreferredDevice refused")
-            mp.setOnErrorListener { _, what, extra ->
-                handler.post { onPlayerError(what, extra) }
-                true
-            }
-            mp.setOnCompletionListener {
-                handler.post {
-                    if (!loop && running) {
-                        stop()
-                        onAutoStop()
+        repeat(MAX_BROKEN_IN_A_ROW) {
+            val ref = source.current
+            val mp = MediaPlayer()
+            try {
+                if (ref is SoundRef.Custom && !canOpen(ref.uri)) throw java.io.FileNotFoundException("unavailable")
+                mp.setAudioAttributes(AudioDevices.MEDIA_ATTRIBUTES)
+                setSource(mp, ref)
+                mp.isLooping = source.loops
+                mp.setVolume(0f, 0f)
+                if (!mp.setPreferredDevice(info)) log("setPreferredDevice refused")
+                mp.setOnErrorListener { _, what, extra ->
+                    handler.post { onPlayerError(what, extra) }
+                    true
+                }
+                mp.setOnCompletionListener { handler.post { if (running) onSoundCompleted() } }
+                mp.prepare()
+                mp.addOnRoutingChangedListener(routingListener, handler)
+                mp.start()
+                player = mp
+                targetId = device.id
+                target = device
+                audible = false
+                mutedSince = SystemClock.elapsedRealtime()
+                return true
+            } catch (e: Exception) {
+                log("player setup failed: ${e.javaClass.simpleName}")
+                runCatching { mp.release() }
+                when (val step = source.failed()) {
+                    SourceStep.Continue -> Unit // try the next / fallback sound
+                    is SourceStep.Ended -> {
+                        if (step.vibrateOnly && !step.stopAlarm && source.current is SoundRef.BuiltIn) {
+                            fatalSoundError = true
+                        } else {
+                            finish(step)
+                        }
+                        return false
                     }
                 }
             }
-            mp.prepare()
-            mp.addOnRoutingChangedListener(routingListener, handler)
-            mp.start()
-            player = mp
-            targetId = device.id
-            target = device
-            audible = false
-            mutedSince = SystemClock.elapsedRealtime()
-            true
-        } catch (e: Exception) {
-            log("player setup failed: ${e.javaClass.simpleName}")
-            runCatching { mp.release() }
-            if (!resolved.usedFallback) {
-                forceFallback = true
-                createMutedPlayer(device, info)
-            } else {
-                fatalSoundError = true
-                false
-            }
         }
+        fatalSoundError = true
+        return false
+    }
+
+    private fun onSoundCompleted() {
+        when (val step = source.advance()) {
+            SourceStep.Continue -> {
+                // Next playlist song: a new muted player for the same headphones, verified again.
+                transitioning = true
+                muteNow("next song")
+                releasePlayer()
+                evaluate("next song")
+            }
+            is SourceStep.Ended -> finish(step)
+        }
+    }
+
+    private fun finish(step: SourceStep.Ended) {
+        muteNow("source ended")
+        releasePlayer()
+        if (!step.vibrateOnly && !step.stopAlarm) {
+            // A non-looping test sound simply finished.
+            stop()
+            onAutoStop()
+            return
+        }
+        ended = true
+        log("sound source ended (stopAlarm=${step.stopAlarm})")
+        report(AudioPathState.SourceEnded(step.stopAlarm))
     }
 
     private fun onPlayerError(what: Int, extra: Int) {
         log("player error $what/$extra")
         muteNow("player error")
         releasePlayer()
-        if (usingFallback) fatalSoundError = true else forceFallback = true
-        evaluate("player error")
+        when (val step = source.failed()) {
+            SourceStep.Continue -> {
+                transitioning = everAudible
+                evaluate("player error")
+            }
+            is SourceStep.Ended -> if (step.vibrateOnly && !step.stopAlarm) {
+                fatalSoundError = true
+                evaluate("player error")
+            } else {
+                finish(step)
+            }
+        }
     }
 
     private fun setSource(mp: MediaPlayer, ref: SoundRef) {
@@ -334,6 +387,7 @@ class SafeHeadphonePlayer(
                 mp.setDataSource(afd)
             }
             is SoundRef.Custom -> mp.setDataSource(context, Uri.parse(ref.uri))
+            is SoundRef.Zengo -> throw IllegalArgumentException("playlist must be expanded first")
         }
     }
 
@@ -391,6 +445,7 @@ class SafeHeadphonePlayer(
         private const val WATCHDOG_MS = 250L
         private const val FADE_TICK_MS = 50L
         private const val RECOVERY_FADE_MS = 400L
+        private const val MAX_BROKEN_IN_A_ROW = 64
 
         /** How long a fresh player may stay unverified before we report "silent". */
         private const val CHECK_GRACE_MS = 1_500L

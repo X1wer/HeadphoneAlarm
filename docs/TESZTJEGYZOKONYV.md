@@ -88,3 +88,25 @@ További eszközszintű megfigyelések:
 - **Hangszórómentes működés fejhallgatóval**: fizikai teszt nélkül nem igazolt. A logika unit tesztekkel lefedett, de a gyártói audio-routing viselkedést csak valódi készüléken lehet mérni.
 - Android 10–16 viselkedés (csak Android 17 emulátoron futott).
 - Teljes képernyős engedély nélküli viselkedés, „Ne zavarjanak” módok, gyártói energiatakarékos módok.
+
+
+## 1.1.0 – színek, hangos ébresztés, Zengő-listák (2026-11-19)
+
+Eszköz: Android 17 (API 37) emulátor (`Medium_Phone_API_37.0`), a Zengő 1.7.0 debug változatával és a Zengő
+tesztzenéivel (`tools/generate_test_audio.py`, köztük egy szándékosan hibás MP3). Valódi telefon nem volt.
+
+| Teszt | Eredmény |
+|---|---|
+| Unit tesztek (új: `PlaylistSequenceTest`, `AlarmSoundSourceTest`) | **110/110 sikeres** |
+| Műszeres tesztek (új: `MigrationTest` – az 1.0.x ébresztései a 2-es sémában is megvannak) | **14/14 sikeres** |
+| Lint | 0 hiba |
+| Zengő-hozzáférés engedélyezése a hangválasztóban (rendszer engedélyablaka) | **Sikeres**; az engedély a Zengő frissítése után is megmarad |
+| A Zengő listái és dalai az ébresztőben (Kedvencek, „Reggeli” 4 dallal; kezdő dal választása) | **Sikeres** |
+| Hangos, Zengő-listás ébresztés zárolt képernyőn | **Sikeres**: „Hangosan szól a hangszórón”, `USAGE_ALARM` lejátszó, „♪ Őszi reggel – Szabó Ádám” (a választott kezdő dal), lila árnyalat |
+| Dalváltás, hibás fájl kihagyása, a lista újrakezdése | **Sikeres**: Őszi reggel → (hibás kihagyva) → Rövid hang → Tavaszi szél → …; a javítás után a hibás dalt csak az első körben próbálja |
+| Ébresztés futó Zengő nélkül (hidegindítás) | Először **hibás** volt (beépített hang szólt) – javítva, utána **sikeres** |
+| Fejhallgatós Zengő-listás ébresztés fejhallgató nélkül | **Sikeres**: csak rezgés, **0** saját hanglejátszó, „Csak rezgés – nincs fejhallgató” |
+| Felfelé húzás a listás ébresztésnél | **Sikeres**: szolgáltatás leáll, nincs lejátszó, nincs rezgés |
+| Kártyák: hangos + lista → vastag piros cikk-cakkos keret; fejhallgatós lista → zöld cikk-cakkos keret | **Sikeres** (képernyőképek) |
+| Magyar és angol felület az új részeken | **Sikeres** |
+| Nem tesztelt | valódi fejhallgatóval szóló listás ébresztés (az emulátornak nincs fejhallgatója), Android 10–16, hangos ébresztés „Ne zavarjanak” módban, a sima (nem listás) színes és piros keretes kártya külön képernyőképe |

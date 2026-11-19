@@ -1,14 +1,17 @@
 package hu.ulpifex.fulesebreszto.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
     entities = [AlarmEntity::class, CustomSoundEntity::class, KnownDeviceEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
+    // 1 -> 2 (1.1.0): output mode, colour and playlist options of an alarm; existing rows get the defaults.
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun alarmDao(): AlarmDao

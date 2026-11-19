@@ -5,6 +5,10 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import hu.ulpifex.fulesebreszto.domain.Alarm
+import hu.ulpifex.fulesebreszto.domain.AlarmOutput
+import hu.ulpifex.fulesebreszto.domain.PlaylistEnd
+import hu.ulpifex.fulesebreszto.domain.PlaylistOptions
+import hu.ulpifex.fulesebreszto.domain.PlaylistOrder
 import hu.ulpifex.fulesebreszto.domain.SoundRef
 import hu.ulpifex.fulesebreszto.domain.WeekDays
 import java.time.LocalDate
@@ -29,6 +33,12 @@ data class AlarmEntity(
     @ColumnInfo(name = "last_triggered_at") val lastTriggeredAt: Long?,
     @ColumnInfo(name = "snooze_until") val snoozeUntil: Long?,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "output", defaultValue = "HEADPHONES") val output: String = AlarmOutput.HEADPHONES.name,
+    @ColumnInfo(name = "color_argb") val colorArgb: Int? = null,
+    @ColumnInfo(name = "playlist_order", defaultValue = "FOLLOW_APP") val playlistOrder: String = PlaylistOrder.FOLLOW_APP.name,
+    @ColumnInfo(name = "playlist_end", defaultValue = "FOLLOW_APP") val playlistEnd: String = PlaylistEnd.FOLLOW_APP.name,
+    @ColumnInfo(name = "playlist_start_track_id") val playlistStartTrackId: Long? = null,
+    @ColumnInfo(name = "playlist_start_track_title") val playlistStartTrackTitle: String? = null,
 ) {
     fun toDomain() = Alarm(
         id = id,
@@ -48,6 +58,14 @@ data class AlarmEntity(
         lastTriggeredAt = lastTriggeredAt,
         snoozeUntil = snoozeUntil,
         createdAt = createdAt,
+        output = AlarmOutput.entries.firstOrNull { it.name == output } ?: AlarmOutput.HEADPHONES,
+        color = colorArgb,
+        playlist = PlaylistOptions(
+            order = PlaylistOrder.entries.firstOrNull { it.name == playlistOrder } ?: PlaylistOrder.FOLLOW_APP,
+            end = PlaylistEnd.entries.firstOrNull { it.name == playlistEnd } ?: PlaylistEnd.FOLLOW_APP,
+            startTrackId = playlistStartTrackId,
+            startTrackTitle = playlistStartTrackTitle,
+        ),
     )
 
     companion object {
@@ -69,6 +87,12 @@ data class AlarmEntity(
             lastTriggeredAt = a.lastTriggeredAt,
             snoozeUntil = a.snoozeUntil,
             createdAt = a.createdAt,
+            output = a.output.name,
+            colorArgb = a.color,
+            playlistOrder = a.playlist.order.name,
+            playlistEnd = a.playlist.end.name,
+            playlistStartTrackId = a.playlist.startTrackId,
+            playlistStartTrackTitle = a.playlist.startTrackTitle,
         )
     }
 }

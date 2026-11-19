@@ -15,6 +15,7 @@ import hu.ulpifex.fulesebreszto.domain.BuiltInSounds
 import hu.ulpifex.fulesebreszto.domain.SoundRef
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,17 @@ class SoundPickerViewModel(private val app: Application, private val c: AppConta
         c.sounds.sounds.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val preview = SoundPreview(app, c)
+
+    private val _zengo = MutableStateFlow<List<ZengoSection>>(emptyList())
+    val zengo: StateFlow<List<ZengoSection>> = _zengo
+
+    /** Re-reads which Zengő builds are installed, whether access is granted, and their playlists. */
+    fun refreshZengo() = viewModelScope.launch(Dispatchers.IO) {
+        _zengo.value = c.zengo.installed().map { zengoApp ->
+            val granted = c.zengo.hasPermission(zengoApp)
+            ZengoSection(zengoApp, granted, if (granted) c.zengo.playlists(zengoApp) else null)
+        }
+    }
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messages: SharedFlow<String> = _messages

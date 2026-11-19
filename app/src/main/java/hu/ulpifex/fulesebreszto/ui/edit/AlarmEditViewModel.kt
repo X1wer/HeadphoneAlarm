@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import hu.ulpifex.fulesebreszto.domain.AlarmOutput
+import hu.ulpifex.fulesebreszto.domain.PlaylistEnd
+import hu.ulpifex.fulesebreszto.domain.PlaylistOrder
+import hu.ulpifex.fulesebreszto.integration.ZengoTrack
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -78,7 +84,24 @@ class AlarmEditViewModel(private val c: AppContainer, private val alarmId: Long)
     fun setVibrateWithHeadphones(value: Boolean) = edit { it.copy(vibrateWithHeadphones = value) }
     fun setSnooze(minutes: Int) = edit { it.copy(snoozeMinutes = minutes.coerceIn(Alarm.MIN_SNOOZE, Alarm.MAX_SNOOZE)) }
     fun setMaxRing(minutes: Int) = edit { it.copy(maxRingMinutes = minutes.coerceIn(Alarm.MIN_RING, Alarm.MAX_RING)) }
-    fun setSound(ref: String, name: String) = edit { it.copy(sound = SoundRef.parse(ref), soundName = name) }
+    fun setSound(ref: String, name: String) = edit {
+        val sound = SoundRef.parse(ref)
+        // Another playlist: its first-song choice no longer applies.
+        val playlist = if (sound == it.sound) it.playlist else it.playlist.copy(startTrackId = null, startTrackTitle = null)
+        it.copy(sound = sound, soundName = name, playlist = playlist)
+    }
+    fun setOutput(output: AlarmOutput) = edit { it.copy(output = output) }
+    fun setColor(color: Int?) = edit { it.copy(color = color) }
+    fun setPlaylistOrder(order: PlaylistOrder) = edit { it.copy(playlist = it.playlist.copy(order = order)) }
+    fun setPlaylistEnd(end: PlaylistEnd) = edit { it.copy(playlist = it.playlist.copy(end = end)) }
+    fun setStartTrack(id: Long?, title: String?) =
+        edit { it.copy(playlist = it.playlist.copy(startTrackId = id, startTrackTitle = title)) }
+
+    /** Songs of the selected Zengő playlist (start-song picker), or null if Zengő cannot be read. */
+    suspend fun playlistTracks(): List<ZengoTrack>? {
+        val sound = _state.value.draft.sound as? SoundRef.Zengo ?: return null
+        return withContext(Dispatchers.IO) { c.zengo.tracks(sound.authority, sound.playlistId) }
+    }
     fun setDate(date: LocalDate) = edit { it.copy(oneShotDate = date) }
     fun setDays(days: WeekDays) = edit { withDays(it, days) }
     fun toggleDay(day: DayOfWeek) = edit { withDays(it, it.days.toggle(day)) }

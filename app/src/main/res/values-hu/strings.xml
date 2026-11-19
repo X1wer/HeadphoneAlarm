@@ -116,8 +116,8 @@
     <string name="preview_ringing_blocked">Ébresztés szól – a tesztlejátszás most nem indítható.</string>
     <string name="audio_checking">Hangkimenet ellenőrzése…</string>
     <string name="preview_playing">Szól a fejhallgatón: %1$s</string>
-    <string name="preview_volume_zero_suffix"> – de a médiahangerő 0!</string>
-    <string name="preview_fallback_suffix"> (a fájl nem érhető el, beépített hang)</string>
+    <string name="preview_volume_zero_suffix">" – de a médiahangerő 0!"</string>
+    <string name="preview_fallback_suffix">" (a fájl nem érhető el, beépített hang)"</string>
     <string name="preview_no_headphones">Nincs engedélyezett fejhallgató – a teszthang nem indul el.</string>
     <string name="preview_lost">A fejhallgató lecsatlakozott – a lejátszás leállt.</string>
     <string name="preview_unverified">A hangkimenet nem igazolható (%1$s) – néma marad.</string>
@@ -150,8 +150,8 @@
     <!-- Ébresztőképernyő -->
     <string name="ring_title">ÉBRESZTÉS</string>
     <plurals name="ring_extra">
-        <item quantity="one">  (+%1$d további)</item>
-        <item quantity="other">  (+%1$d további)</item>
+        <item quantity="one">"  (+%1$d további)"</item>
+        <item quantity="other">"  (+%1$d további)"</item>
     </plurals>
     <string name="ring_swipe_cd">Ébresztés. Húzd felfelé a kikapcsoláshoz, lefelé a szundihoz.</string>
     <string name="ring_dismiss">Leállítás</string>
@@ -234,7 +234,7 @@
     <string name="no_known_devices_hint">Csatlakoztasd a fejhallgatót, és itt megjelenik.</string>
     <string name="connected">csatlakoztatva</string>
     <string name="not_connected">nincs csatlakoztatva</string>
-    <string name="speaker_cannot_allow"> · hangszóró, nem engedélyezhető</string>
+    <string name="speaker_cannot_allow">" · hangszóró, nem engedélyezhető"</string>
     <string name="allow_device_cd">%1$s engedélyezése</string>
     <string name="forget">Törlés</string>
     <string name="test_headphones">Fejhallgatóhang tesztelése</string>
@@ -266,4 +266,62 @@
     <string name="about_text">Az ébresztő hangja kizárólag engedélyezett, ellenőrzött fejhallgatón szólal meg. Ha a hangkimenet nem igazolható, a telefon csak rezeg. Az alkalmazás teljesen offline működik: nincs internet-hozzáférése, reklámja, analitikája vagy fiókja.\n\nLicencek: az alkalmazás forráskódja MIT-licences. Felhasznált könyvtárak: Android Jetpack (AndroidX, Jetpack Compose, Material 3, Room, DataStore, Navigation) és Kotlin/kotlinx.coroutines – mind Apache License 2.0. A beépített ébresztőhangokat a projekt saját szkriptje állítja elő (tools/generate_sounds.py), harmadik fél jogaitól mentesek.</string>
     <string name="msg_no_vibrator">Ezen a készüléken nincs rezgőmotor.</string>
     <string name="msg_test_alarm">Próbaébresztés %1$s-kor (%2$d perc múlva)</string>
+
+    <!-- 1.1.0: colours, loud alarms, Zengő playlists -->
+    <string name="section_output">Hangkimenet</string>
+    <string name="output_headphones">Csak fejhallgató</string>
+    <string name="output_headphones_desc">Csak ellenőrzött fejhallgatón szól, különben a telefon rezeg.</string>
+    <string name="output_speaker">Hangos ébresztés</string>
+    <string name="output_speaker_desc">A telefon hangszóróján szól, mint egy hagyományos ébresztőóra, a telefon ébresztési hangerejével.</string>
+    <string name="section_color">Szín</string>
+    <string name="color_auto">Automatikus</string>
+    <string name="vibrate_with_speaker">Rezgés is</string>
+    <string name="volume_note_speaker">A telefon ébresztési hangerejéhez képest állítja a hangerőt; a rendszerhangerő nem változik.</string>
+    <string name="section_playlist">Zengő lejátszási lista</string>
+    <string name="playlist_order">Sorrend</string>
+    <string name="playlist_end">A lista végén</string>
+    <string name="playlist_start">Kezdő dal</string>
+    <string name="playlist_start_default">A lista eleje (keverésnél véletlen)</string>
+    <string name="order_follow">A Zengő beállítása szerint</string>
+    <string name="order_in_order">Sorban</string>
+    <string name="order_shuffle">Keverve</string>
+    <string name="end_follow">A Zengő beállítása szerint</string>
+    <string name="end_restart">Újrakezdi a listát</string>
+    <string name="end_repeat_last">Az utolsó dalt ismétli</string>
+    <string name="end_builtin">Beépített ébresztőhangra vált</string>
+    <string name="end_vibrate">Csak rezeg tovább</string>
+    <string name="end_stop">Az ébresztés leáll</string>
+    <string name="playlist_follow_note">„A Zengő beállítása szerint” a Zengőben mentett keverési és ismétlési módot használja, amikor az ébresztés megszólal.</string>
+    <string name="start_song_unavailable">A lista dalai most nem olvashatók.</string>
+    <string name="favorites_name">Kedvencek</string>
+    <string name="zengo_section">Zengő lejátszási listák</string>
+    <string name="zengo_not_installed">Telepítsd a Zengő zenelejátszó 1.7-es vagy újabb változatát, hogy a lejátszási listái ébresztőhangként szólhassanak.</string>
+    <string name="zengo_grant">Hozzáférés a Zengő listáihoz</string>
+    <string name="zengo_grant_note">Az ébresztő csak olvassa a listákat és lejátssza a dalaikat; a Zengőben semmi sem változik.</string>
+    <string name="zengo_denied">A hozzáférést elutasítottad. Az alkalmazás engedélybeállításaiban engedélyezheted.</string>
+    <string name="zengo_no_lists">A Zengőben még nincs lejátszási lista.</string>
+    <string name="zengo_debug_suffix">" (fejlesztői változat)"</string>
+    <string name="zengo_unavailable">A Zengő most nem érhető el.</string>
+    <string name="card_loud_sound">Hangos ébresztés · %1$s</string>
+    <string name="card_playlist_sound">Zengő · %1$s</string>
+    <string name="audio_speaker">Hangosan szól a hangszórón</string>
+    <string name="audio_speaker_volume_zero">A telefon ébresztési hangereje 0 – rezgés is</string>
+    <string name="audio_playlist_ended">A lista véget ért – csak rezgés</string>
+    <string name="ring_now_playing">♪ %1$s</string>
+    <plurals name="zengo_song_count">
+        <item quantity="one">%d dal</item>
+        <item quantity="other">%d dal</item>
+    </plurals>
+    <string-array name="alarm_color_names">
+        <item>Türkiz</item>
+        <item>Kék</item>
+        <item>Indigó</item>
+        <item>Lila</item>
+        <item>Rózsaszín</item>
+        <item>Piros</item>
+        <item>Narancs</item>
+        <item>Borostyán</item>
+        <item>Zöld</item>
+        <item>Szürke</item>
+    </string-array>
 </resources>

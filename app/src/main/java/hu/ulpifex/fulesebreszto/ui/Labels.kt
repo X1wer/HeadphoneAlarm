@@ -74,12 +74,17 @@ fun builtInSoundNameRes(key: String): Int = when (key) {
 fun soundName(context: Context, sound: SoundRef, storedName: String): String = when (sound) {
     is SoundRef.BuiltIn -> context.getString(builtInSoundNameRes(sound.key))
     is SoundRef.Custom -> storedName
+    is SoundRef.Zengo -> if (sound.playlistId == ZENGO_FAVORITES_ID) context.getString(R.string.favorites_name) else storedName
 }
+
+/** Zengő's Favourites pseudo-playlist id (see Zengő's AlarmBridge). */
+const val ZENGO_FAVORITES_ID = 0L
 
 @Composable
 fun soundName(alarm: Alarm): String = when (val s = alarm.sound) {
     is SoundRef.BuiltIn -> stringResource(builtInSoundNameRes(s.key))
     is SoundRef.Custom -> alarm.soundName
+    is SoundRef.Zengo -> if (s.playlistId == ZENGO_FAVORITES_ID) stringResource(R.string.favorites_name) else alarm.soundName
 }
 
 @Composable
@@ -95,6 +100,8 @@ fun rememberTimeFormat(): TimeFormat {
 /** Text describing the audio path of the ringing alarm (screen and notification). */
 fun ringStatusText(context: Context, ui: RingUiState): String = when {
     ui.state == RingState.TRIGGERED || ui.state == RingState.CHECKING_AUDIO -> context.getString(R.string.audio_checking)
+    ui.state == RingState.PLAYING_SPEAKER && ui.systemVolumeZero -> context.getString(R.string.audio_speaker_volume_zero)
+    ui.state == RingState.PLAYING_SPEAKER -> context.getString(R.string.audio_speaker)
     ui.state == RingState.PLAYING_HEADPHONES && ui.systemVolumeZero -> context.getString(R.string.audio_playing_volume_zero)
     ui.state == RingState.PLAYING_HEADPHONES ->
         ui.audioDevice?.takeIf { it.isNotBlank() }?.let { context.getString(R.string.audio_playing_named, it) }
@@ -106,6 +113,7 @@ fun ringStatusText(context: Context, ui: RingUiState): String = when {
             SilentReason.ROUTE_UNVERIFIED -> R.string.audio_unverified
             SilentReason.SOUND_FAILED -> R.string.audio_failed
             SilentReason.VOLUME_ZERO -> R.string.audio_volume_zero
+            SilentReason.PLAYLIST_ENDED -> R.string.audio_playlist_ended
         },
     )
 }

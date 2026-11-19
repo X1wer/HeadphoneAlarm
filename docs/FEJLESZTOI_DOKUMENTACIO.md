@@ -105,3 +105,38 @@ Licencek: Apache License 2.0 (AndroidX, Kotlin, coroutines). Tesztfüggőségek:
 3. targetSdk 37-re emelés valódi Android 17 készüléken végzett teszt után.
 4. Opcionális: `BLUETOOTH_CONNECT` kérése a pontosabb Bluetooth-eszközosztály (fejhallgató vs. hangszóró) megjelenítéséhez.
 5. Az Android 10–12-es nyelvváltási út kipróbálása valódi vagy emulált régebbi készüléken.
+
+
+## 1.1.0 – színek, hangos ébresztés, Zengő-listák (2026-11-19)
+
+- **Modell:** `Alarm.output` (`HEADPHONES` / `SPEAKER`), `Alarm.color` (ARGB vagy null = a kimenet alapszíne:
+  türkiz / piros), `Alarm.playlist` (`PlaylistOptions`: sorrend, lista vége, kezdő dal). Új hangforrás:
+  `SoundRef.Zengo(authority, playlistId)` (`zengo:<hatóság>/<id>`; a Kedvencek azonosítója 0).
+- **Adatbázis:** 2-es séma, `AutoMigration(1 → 2)` alapértékekkel (`output` = HEADPHONES, `playlist_order` /
+  `playlist_end` = FOLLOW_APP, a többi null); `MigrationTest` igazolja, hogy az 1.0.x ébresztései megmaradnak.
+- **Lejátszási terv (tiszta Kotlin):** `PlaylistPlanner` a Zengő mentett módjából és az ébresztés beállításaiból
+  `PlaylistPlan`-t készít (Zengő ALL → újrakezdés, ONE → az első dal ismétlése, OFF → a lista után csak rezgés,
+  STOP_AFTER_CURRENT → az első dal után csak rezgés); `PlaylistSequence` adja a sorrendet (kezdő dal, keverés
+  ismétlés nélkül a körök határán, a hibás dalok kihagyása és megjegyzése).
+- **Hang:** `AlarmSoundSource` (egy hang / `PlaylistSoundSource`), `AlarmAudio` közös felület. A fejhallgatós út
+  (`SafeHeadphonePlayer`) minden dalhoz új, néma lejátszót hoz létre és újra igazolja az útvonalat; a dalok közti
+  rövid szünetet nem jelenti útvonalhibának. A hangos út (`SpeakerAlarmPlayer`) a riasztási hangfolyamon
+  (`USAGE_ALARM`) szól, útvonal-korlátozás nélkül – szándékosan.
+- **Zengő-kapcsolat:** `integration/ZengoClient` a Zengő 1.7.0 csak olvasható szolgáltatóját kérdezi
+  (`<csomag>.alarmplaylists`, engedély `<csomag>.permission.ALARM_PLAYLISTS`, kiadás és debug változat is).
+  A lista csengéskor, a háttérszálon töltődik (`AlarmSounds.sourceFor`), egy újrapróbálással; ha nem érhető el,
+  a beépített hang szól. A manifest `<queries>` része teszi láthatóvá a szolgáltatót.
+- **Felület:** a kártya keretét és színét az `alarmFrame()` adja: hangos → 4 dp piros keret; Zengő-lista →
+  `ZigZagShape` (cikk-cakkos alak és keret); egyébként vékony keret a választott színben, a kártya enyhén
+  színezve. Szerkesztő: Hangkimenet, Szín (10 szín + Automatikus), Zengő-beállítások (sorrend, lista vége, kezdő
+  dal a Zengőből olvasott dalok közül). Hangválasztó: „Zengő lejátszási listák” rész engedélykéréssel.
+  Ébresztőképernyő: a szín árnyalja, listás ébresztésnél „♪ cím – előadó”.
+
+### Tesztelés közben talált és javított hibák (1.1.0)
+
+| # | Hiba | Hogyan derült ki | Javítás |
+|---|---|---|---|
+| 7 | Hidegen (futó Zengő nélkül) a Zengő szolgáltatója a saját `Application.onCreate`-je előtt kapta a kérést, és hibát adott → a listás ébresztés a beépített hangra esett vissza. A valóságban reggel ez a szokásos helyzet. | Emulátoros ébresztés a Zengő újratelepítése után | Zengő: lusta `AppContainer`; ébresztő: egy újrapróbálás 0,7 s után |
+| 8 | A hibás dalt minden körben újra megpróbálta | Emulátoron a napló két körben két hibát mutatott | `PlaylistSequence.next()` kihagyja a megjegyzett hibás dalokat |
+| 9 | A szóközzel kezdődő feliratokból (pl. „ (fejlesztői változat)”, „ · hangszóró, nem engedélyezhető”) az Android levágta a szóközt – az 1.0.x-ben is | Képernyőkép | Idézőjelek a `strings.xml`-ben |
+| 10 | A room-testing a navigáció által behozott régebbi kotlinx-serializationnel összeomlott | `MigrationTest` | 1.8.1-es verziókényszer (mint a Zengőben) |
