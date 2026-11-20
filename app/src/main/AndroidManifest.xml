@@ -10,6 +10,10 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Brought in by Media3 (used only to talk to Zengő on the phone); the app needs no network. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
@@ -26,6 +30,9 @@
     <queries>
         <provider android:authorities="io.github.x1wer.szabadzene.alarmplaylists" />
         <provider android:authorities="io.github.x1wer.szabadzene.debug.alarmplaylists" />
+        <!-- Zengő's playback service, which plays playlist alarms (Zengő 1.8.0+). -->
+        <package android:name="io.github.x1wer.szabadzene" />
+        <package android:name="io.github.x1wer.szabadzene.debug" />
     </queries>
 
     <!-- No INTERNET and no Bluetooth permissions: the app is fully offline and identifies

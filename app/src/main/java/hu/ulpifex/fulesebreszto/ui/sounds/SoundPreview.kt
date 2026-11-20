@@ -82,7 +82,7 @@ class SoundPreview(private val context: Context, private val container: AppConta
                                 text(R.string.preview_unverified, state.detail?.let { text(it.textRes()) } ?: text(R.string.unknown))
                             SilentReason.SOUND_FAILED -> text(R.string.preview_failed)
                             SilentReason.VOLUME_ZERO -> text(R.string.preview_volume_zero)
-                            SilentReason.PLAYLIST_ENDED -> text(R.string.preview_ended)
+                            SilentReason.PLAYLIST_ENDED, SilentReason.ZENGO_PAUSED -> text(R.string.preview_ended)
                         },
                     )
                 }

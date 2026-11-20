@@ -140,3 +140,39 @@ Licencek: Apache License 2.0 (AndroidX, Kotlin, coroutines). Tesztfüggőségek:
 | 8 | A hibás dalt minden körben újra megpróbálta | Emulátoron a napló két körben két hibát mutatott | `PlaylistSequence.next()` kihagyja a megjegyzett hibás dalokat |
 | 9 | A szóközzel kezdődő feliratokból (pl. „ (fejlesztői változat)”, „ · hangszóró, nem engedélyezhető”) az Android levágta a szóközt – az 1.0.x-ben is | Képernyőkép | Idézőjelek a `strings.xml`-ben |
 | 10 | A room-testing a navigáció által behozott régebbi kotlinx-serializationnel összeomlott | `MigrationTest` | 1.8.1-es verziókényszer (mint a Zengőben) |
+
+## 1.2.0 – a lista a Zengőben szól, oldalra húzás (2026-11-20)
+
+- **Kérés:** a Zengő-listás ébresztés magában a Zengőben induljon el; felfelé húzás = ébresztés és zene leáll,
+  lefelé = szundi, oldalra = az ébresztés eltűnik, a lista szól tovább. A főképernyőről lekerült a
+  „Nincs fejhallgató – ébresztéskor csak rezgés” sor (a hangos ébresztés mellett félrevezető volt).
+- **Zengő-oldal (1.8.0):** a Zengő MediaSession-je az `ALARM_PLAYLISTS` engedéllyel rendelkező appnak három saját
+  parancsot ad (`integration/ZengoSession`, a Zengőben `AlarmBridge` 2-es változat): `ALARM_PLAY` (lista, kezdő dal,
+  keverés, ismétlés, „leállás az első dal után”, „utolsó dal ismétlése”, riasztási hangfolyam, előnyben részesített
+  kimenet, kulcs + szundi utáni folytatás – **némán indul**), `ALARM_VOLUME` (cél-hangerő áttűnéssel), `ALARM_FINISH`
+  (szól tovább / szünet; a Zengő visszaállítja a felhasználó ismétlési módját, a hangerőt, a médiahangfolyamot és a
+  kimenetet).
+- **Ébresztő-oldal:** `audio/ZengoAlarmPlayer` (`AlarmAudio`) Media3 `MediaController`-rel vezérli a Zengőt.
+  Fejhallgatós módban a döntés ugyanaz az `OutputPolicy`, mint eddig, de „útvonalként” a rendszer médiaútvonala
+  (`getAudioDevicesForAttributes`, API 33+) szolgál, mert egy másik app lejátszójának útvonala nyilvános API-n nem
+  kérdezhető le (`AudioPlaybackConfiguration`-ből csak az attribútumok és az eszköz látszik, a munkamenet nem). Ezért
+  API 33 alatt fejhallgatós módban a régi, saját lejátszó szól. Kihúzás / BECOMING_NOISY / kétség → azonnali
+  némítás + szünet a Zengőben, rezgés; visszadugáskor ugyanott folytatja. Hangos módban nincs útvonal-ellenőrzés.
+  Ha a Zengő nem érhető el, nem ad ébresztési parancsot (régi verzió), nem indul el 6 mp alatt, tartósan hibára fut
+  vagy megszakad a kapcsolat, a régi, saját lejátszó szól ugyanazzal a listával (`RingSound.local`).
+- **Állapotgép:** új `RingEvent.Continue` → `DISMISSED` + `HandOverAudio` (a zene nem áll le); a szolgáltatás csak
+  akkor küldi, ha a lista hallhatóan szól a Zengőben (`ZengoAlarmPlayer.canHandOver`). `FinishKind.CONTINUED`.
+- **Felület:** `SwipeGestureDetector` vízszintes iránya (`SwipeAction.CONTINUE`, csak amíg engedélyezett);
+  ébresztőképernyő: oldalnyilak, „Húzd oldalra…” sor, „A Zengőben szól”, kisegítő művelet; értesítés: „Zene tovább”
+  gomb, és az elhúzott értesítés (`deleteIntent`) is ezt jelenti, más ébresztésnél újra megjelenik.
+- **Függőség:** `androidx.media3:media3-session` 1.11.1 (a Zengővel azonos); az általa hozott
+  `ACCESS_NETWORK_STATE` engedélyt a manifest eltávolítja.
+
+### Tesztelés közben talált és javított hibák (1.2.0)
+
+| # | Hiba | Hogyan derült ki | Javítás |
+|---|---|---|---|
+| 11 | A második csengetésnél az ébresztő azonnal „a lista véget ért”-et jelzett: a Zengő még az előző csengetés befejezett állapotát mutatta, mielőtt az új parancs hatott volna | Emulátoros csengetés, napló | A lista vége csak azután számít, hogy a Zengő ebben a körben már szólt (`seenPlaying`) |
+| 12 | Szundi utáni folytatáskor a Zengő lejátszója hibára futott: a Media3 1.11 automatikus hangfókusz-kezelése csak média/játék hangfolyamra engedélyezett, a riasztásira kivételt dob (az első csengetésnél a még üres lejátszón ez nem jött elő) | Emulátor, a Zengő naplója (`IllegalArgumentException`) | Zengő: riasztási hangfolyamon saját fókuszkérés, a Media3 fókuszkezelése kikapcsolva; a tartalék (az ébresztő saját lejátszója) közben helyesen átvette a listát |
+| 13 | Elutasított `ALARM_PLAY` (pl. üres lista) is elnémította a Zengőt | Új műszeres teszt írása közben | A lista a lejátszó módosítása előtt készül el |
+| 14 | A Zengő rövid hiba utáni átugrását (hibás dal) az ébresztő tartós hibának vehette volna | Átnézés | 4 mp-es türelmi idő a tartalékra váltás előtt |

@@ -84,6 +84,30 @@ class SwipeGestureDetectorTest {
     }
 
     @Test
+    fun `sideways swipe continues only while allowed`() {
+        var allowed = true
+        val d = SwipeGestureDetector(threshold, allowHorizontal = { allowed })
+        assertEquals(SwipeAction.CONTINUE, swipe(d, 100f, 1000f, 100f + threshold, 1010f))
+        assertEquals(SwipeAction.CONTINUE, swipe(d, 900f, 1000f, 400f, 990f))
+        // Diagonal, short or vertical moves are unchanged.
+        assertNull(swipe(d, 100f, 1000f, 450f, 650f))
+        assertNull(swipe(d, 100f, 1000f, 100f + threshold - 1f, 1000f))
+        assertEquals(SwipeAction.DISMISS, swipe(d, 500f, 1500f, 520f, 1100f))
+        allowed = false
+        assertNull(swipe(d, 100f, 1000f, 700f, 1000f))
+    }
+
+    @Test
+    fun `sideways progress follows the horizontal travel`() {
+        val d = SwipeGestureDetector(threshold, allowHorizontal = { true })
+        d.onDown(500f, 1000f)
+        val half = d.onMove(500f - threshold / 2, 1000f)
+        assertEquals(SwipeAction.CONTINUE, half.direction)
+        assertEquals(0.5f, half.progress, 0.001f)
+        assertEquals(-threshold / 2, half.dx, 0.001f)
+    }
+
+    @Test
     fun `cancelled gesture produces nothing`() {
         val d = detector()
         d.onDown(500f, 1500f)

@@ -49,6 +49,24 @@ object PlaylistPlanner {
     }
 }
 
+/**
+ * How Zengő itself plays a [PlaylistPlan] (Zengő 1.8.0+ plays playlist alarms in its own player).
+ * [repeat] is Zengő's repeat name ("ALL", "ONE", "OFF"); the end choices that Zengő cannot do on its
+ * own (built-in tone, vibrate only, stop) are handled by the alarm once Zengő reports the list ended.
+ */
+data class ZengoPlayMode(val shuffle: Boolean, val repeat: String, val stopAfterFirst: Boolean, val repeatLast: Boolean)
+
+fun PlaylistPlan.toZengoPlayMode(): ZengoPlayMode = ZengoPlayMode(
+    shuffle = shuffle,
+    repeat = when {
+        repeatOne -> "ONE"
+        end == ResolvedEnd.RESTART_LIST && !stopAfterFirst -> "ALL"
+        else -> "OFF"
+    },
+    stopAfterFirst = stopAfterFirst,
+    repeatLast = end == ResolvedEnd.REPEAT_LAST && !repeatOne && !stopAfterFirst,
+)
+
 /** What to do after a song has finished. */
 sealed interface NextSong {
     data class Play(val index: Int) : NextSong

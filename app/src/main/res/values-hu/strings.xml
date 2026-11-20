@@ -324,4 +324,10 @@
         <item>Zöld</item>
         <item>Szürke</item>
     </string-array>
+    <string name="ring_swipe_sideways">Húzd oldalra: az ébresztés bezárul, a zene szól tovább</string>
+    <string name="ring_continue">Zene tovább</string>
+    <string name="ring_feedback_continued">A zene a Zengőben szól tovább</string>
+    <string name="ring_in_zengo">A Zengőben szól</string>
+    <string name="audio_zengo_paused">A Zengőben szüneteltetve – csak rezgés</string>
+    <string name="playlist_zengo_note">A lista magában a Zengőben szól (1.8.0-tól). Az ébresztőképernyőn oldalra húzva az ébresztés bezárul, a zene pedig szól tovább.</string>
 </resources>

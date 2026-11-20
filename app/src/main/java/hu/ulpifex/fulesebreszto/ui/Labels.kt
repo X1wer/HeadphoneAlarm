@@ -114,6 +114,7 @@ fun ringStatusText(context: Context, ui: RingUiState): String = when {
             SilentReason.SOUND_FAILED -> R.string.audio_failed
             SilentReason.VOLUME_ZERO -> R.string.audio_volume_zero
             SilentReason.PLAYLIST_ENDED -> R.string.audio_playlist_ended
+            SilentReason.ZENGO_PAUSED -> R.string.audio_zengo_paused
         },
     )
 }

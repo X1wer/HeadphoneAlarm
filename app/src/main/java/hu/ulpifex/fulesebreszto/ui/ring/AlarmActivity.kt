@@ -57,6 +57,7 @@ class AlarmActivity : ComponentActivity() {
         val serviceAction = when (swipe) {
             SwipeAction.DISMISS -> AlarmRingService.ACTION_DISMISS
             SwipeAction.SNOOZE -> AlarmRingService.ACTION_SNOOZE
+            SwipeAction.CONTINUE -> AlarmRingService.ACTION_CONTINUE
         }
         AlarmRingService.sendAction(this, serviceAction)
     }

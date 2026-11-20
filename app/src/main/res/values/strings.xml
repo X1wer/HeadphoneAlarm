@@ -329,4 +329,10 @@
         <item>Green</item>
         <item>Grey</item>
     </string-array>
+    <string name="ring_swipe_sideways">Swipe sideways: the alarm closes, the music keeps playing</string>
+    <string name="ring_continue">Keep listening</string>
+    <string name="ring_feedback_continued">The music keeps playing in Zengő</string>
+    <string name="ring_in_zengo">Playing in Zengő</string>
+    <string name="audio_zengo_paused">Paused in Zengő – vibration only</string>
+    <string name="playlist_zengo_note">The list plays in Zengő itself (1.8.0 or newer). On the alarm screen, swipe sideways to close the alarm and keep listening.</string>
 </resources>

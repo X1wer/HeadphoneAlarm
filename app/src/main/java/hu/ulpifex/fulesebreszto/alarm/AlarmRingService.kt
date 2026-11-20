@@ -12,10 +12,10 @@ import android.os.PowerManager
 import hu.ulpifex.fulesebreszto.AppContainer
 import hu.ulpifex.fulesebreszto.FulesApp
 import hu.ulpifex.fulesebreszto.audio.AlarmAudio
-import hu.ulpifex.fulesebreszto.audio.AlarmSoundSource
 import hu.ulpifex.fulesebreszto.audio.AudioPathState
 import hu.ulpifex.fulesebreszto.audio.SpeakerAlarmPlayer
 import hu.ulpifex.fulesebreszto.audio.SafeHeadphonePlayer
+import hu.ulpifex.fulesebreszto.audio.ZengoAlarmPlayer
 import hu.ulpifex.fulesebreszto.audio.VibrationController
 import hu.ulpifex.fulesebreszto.domain.Alarm
 import hu.ulpifex.fulesebreszto.domain.AlarmStateMachine
@@ -66,6 +66,8 @@ class AlarmRingService : Service() {
             }
             ACTION_DISMISS -> session?.dispatch(RingEvent.Dismiss) ?: stopIfIdle()
             ACTION_SNOOZE -> session?.dispatch(RingEvent.Snooze) ?: stopIfIdle()
+            ACTION_CONTINUE -> session?.requestContinue(fromNotificationDismiss = false) ?: stopIfIdle()
+            ACTION_NOTIFICATION_DISMISSED -> session?.requestContinue(fromNotificationDismiss = true) ?: stopIfIdle()
             else -> stopIfIdle()
         }
         return START_NOT_STICKY
@@ -97,7 +99,7 @@ class AlarmRingService : Service() {
                 withContext(Dispatchers.IO) {
                     container.engine.onTrigger(id, kind, occurrence)?.let { alarm ->
                         // Expanding a Zengő playlist reads its provider, so it happens here, off the main thread.
-                        Triple(alarm, container.devices.allowedKeysNow(), AlarmSounds.sourceFor(alarm, container.zengo, container.log::log))
+                        Triple(alarm, container.devices.allowedKeysNow(), AlarmSounds.soundFor(alarm, container.zengo, kind, container.log::log))
                     }
                 }
             } catch (e: Exception) {
@@ -116,7 +118,7 @@ class AlarmRingService : Service() {
         }
     }
 
-    private fun startSession(alarm: Alarm, allowedKeys: Set<String>, sound: AlarmSoundSource) {
+    private fun startSession(alarm: Alarm, allowedKeys: Set<String>, sound: RingSound) {
         acquireWakeLock(alarm.maxRingMinutes)
         val s = RingSession(
             context = this,
@@ -126,7 +128,7 @@ class AlarmRingService : Service() {
             container = container,
             scope = scope,
             onChanged = { ui ->
-                container.notifications.updateRing(ui.alarmTime, ui.label, ringStatusText(AppLocale.localized(this), ui))
+                container.notifications.updateRing(ui.alarmTime, ui.label, ringStatusText(AppLocale.localized(this), ui), ui.canContinue)
             },
             onEnded = { onSessionEnded() },
         )
@@ -182,6 +184,12 @@ class AlarmRingService : Service() {
         const val ACTION_DISMISS = "hu.ulpifex.fulesebreszto.action.DISMISS"
         const val ACTION_SNOOZE = "hu.ulpifex.fulesebreszto.action.SNOOZE"
 
+        /** Close the alarm, keep the Zengő playlist playing (sideways swipe, notification button). */
+        const val ACTION_CONTINUE = "hu.ulpifex.fulesebreszto.action.CONTINUE"
+
+        /** The ringing notification was swiped away: same as [ACTION_CONTINUE] while Zengő plays, else re-posted. */
+        const val ACTION_NOTIFICATION_DISMISSED = "hu.ulpifex.fulesebreszto.action.NOTIFICATION_DISMISSED"
+
         fun sendAction(context: Context, action: String) {
             context.startService(Intent(context, AlarmRingService::class.java).setAction(action))
         }
@@ -193,10 +201,10 @@ class AlarmRingService : Service() {
  * starts or stops sound or vibration.
  */
 private class RingSession(
-    context: Context,
+    private val context: Context,
     primary: Alarm,
-    allowedKeys: Set<String>,
-    private val sound: AlarmSoundSource,
+    private val allowedKeys: Set<String>,
+    private val sound: RingSound,
     private val container: AppContainer,
     private val scope: CoroutineScope,
     private val onChanged: (RingUiState) -> Unit,
@@ -207,16 +215,35 @@ private class RingSession(
     private val primary: Alarm get() = alarms.first()
     private val machine = AlarmStateMachine(primary.vibrateWithHeadphones)
     private val vibration = VibrationController(context)
+
+    /** Zengő playlist alarms play inside Zengő (with the in-app player as fallback). */
+    private val zengoPlayer: ZengoAlarmPlayer? = sound.zengo?.let { request ->
+        ZengoAlarmPlayer(
+            context = context,
+            request = request,
+            loud = primary.isLoud,
+            allowedKeys = { allowedKeys },
+            log = container.log::log,
+            listener = ::postAudio,
+            localPlayer = ::localPlayer,
+        )
+    }
+    private val player: AlarmAudio = zengoPlayer ?: localPlayer()
+
     /** Headphone alarms use the fail-closed player; loud alarms the plain alarm-stream player. */
-    private val player: AlarmAudio = if (primary.isLoud) {
-        SpeakerAlarmPlayer(context, container.log::log) { state -> handler.post { onAudio(state) } }
+    private fun localPlayer(): AlarmAudio = if (primary.isLoud) {
+        SpeakerAlarmPlayer(context, container.log::log, ::postAudio)
     } else {
         SafeHeadphonePlayer(
             context = context,
             allowedKeys = { allowedKeys },
             log = container.log::log,
-            listener = { state -> handler.post { onAudio(state) } },
+            listener = ::postAudio,
         )
+    }
+
+    private fun postAudio(state: AudioPathState) {
+        handler.post { onAudio(state) }
     }
     private var nowPlaying: String? = null
     private val timeText = LocalTime.now().let { AppLocale.timeFormat(context).time(it.hour, it.minute) }
@@ -242,6 +269,18 @@ private class RingSession(
         val effects = machine.handle(event)
         effects.forEach(::execute)
         publish()
+    }
+
+    /**
+     * Sideways swipe / "Keep listening": only while the list audibly plays in Zengő. A swiped-away
+     * notification of any other alarm is simply shown again.
+     */
+    fun requestContinue(fromNotificationDismiss: Boolean) {
+        when {
+            zengoPlayer?.canHandOver == true -> dispatch(RingEvent.Continue)
+            fromNotificationDismiss && machine.state.isRinging -> publish()
+            else -> Unit
+        }
     }
 
     fun forceStop() {
@@ -278,9 +317,13 @@ private class RingSession(
                 if (primary.volumePercent <= 0) {
                     handler.post { dispatch(RingEvent.AudioUnavailable(SilentReason.VOLUME_ZERO)) }
                 } else {
-                    player.start(sound, primary.volumePercent, FADE_IN_MS)
+                    player.start(sound.local, primary.volumePercent, FADE_IN_MS)
                 }
             RingEffect.StopAudio -> player.stop()
+            RingEffect.HandOverAudio -> {
+                finished = FinishKind.CONTINUED
+                zengoPlayer?.handOver() ?: player.stop()
+            }
             RingEffect.StartVibration -> vibration.startAlarmPattern()
             RingEffect.StopVibration -> vibration.stop()
             RingEffect.ShowRingUi, RingEffect.CloseRingUi, RingEffect.CancelSnooze -> Unit
@@ -321,6 +364,8 @@ private class RingSession(
             colorArgb = primary.displayColor,
             loud = primary.isLoud,
             nowPlaying = nowPlaying,
+            inZengo = zengoPlayer?.playsInZengo == true,
+            canContinue = machine.state.isRinging && zengoPlayer?.canHandOver == true,
             finished = finished,
         )
         RingSessionState.publish(ui)

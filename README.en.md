@@ -23,6 +23,7 @@ A native Android alarm clock whose sound plays **only on connected, allowed head
 - **A colour for every alarm** (10 colours or “Automatic”): its card, frame and ringing screen use it.
 - **Loud alarm (1.1.0):** per alarm you choose headphones only (default) or a classic, loud alarm on the phone speaker. Loud alarms get a **thick red frame**, and their colour is red by default.
 - **Zengő playlist as alarm sound (1.1.0):** any playlist or the Favourites of the Zengő (Orotund) music player (1.7.0 or newer) can ring as the alarm. By default it follows the shuffle/repeat mode saved in Zengő; you can also set the order (in order / shuffled), what happens at the end of the list (restart, repeat the last song, built-in tone, vibrate only, stop) and which song it always starts with. These alarms get a **zig-zag frame**.
+- **The list plays inside Zengő (1.2.0, Zengő 1.8.0 or newer):** on the alarm screen swipe up to stop the alarm and the music, swipe down to snooze (it then continues where it stopped), or **swipe sideways** to close the alarm while the list keeps playing in Zengő. The notification's “Keep listening” button, or swiping the notification away, does the same. If Zengő cannot play it (older Zengő, no permission, an error), the alarm plays the list itself.
 - **Languages: Hungarian and English.** The app follows the phone language (Hungarian phones → Hungarian, every other language → English) and can be switched in *Settings → Language*.
 - Dark (default), light and system theme; 24-hour format switch; layout adapts to large font sizes.
 - Fully offline: no `INTERNET` permission, ads, analytics or account.
@@ -124,6 +125,7 @@ AlarmManager.setAlarmClock ──▶ AlarmReceiver ──▶ AlarmRingService (f
 ## 10. Known limitations
 
 - A **loud alarm** deliberately plays on the phone speaker (alarm stream); the headphone-only guarantee does not apply to it. Its loudness follows the phone's alarm volume.
+- **List playing in Zengő, headphone alarm:** the alarm can check the route of Zengő's player only through the platform's media route (Android 13+): Zengő starts muted with the headphones as its preferred output and becomes audible only while the media route consists of allowed headphones only. Unplugging or any doubt mutes and pauses it at once. On Android 10–12 headphone playlist alarms are still played by the alarm app itself. Once the music is left playing after the alarm, Zengő plays with its own settings (repeat, volume, output), as at any other time.
 - A **Zengő playlist** plays only with Zengő 1.7.0 or newer installed and access granted (Alarm sounds → “Allow access to Zengő playlists”). If Zengő cannot be reached, the list is empty, or the phone has not been unlocked since a reboot, the built-in alarm tone plays. Songs that cannot be played are skipped and not retried during that alarm.
 - With Zengő's repeat mode “off” or “stop after the current song”, an alarm set to “As set in Zengő” keeps vibrating after the list (or the first song) instead of going completely silent.
 

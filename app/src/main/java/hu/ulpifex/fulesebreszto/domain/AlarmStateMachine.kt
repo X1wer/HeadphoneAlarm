@@ -32,6 +32,9 @@ enum class SilentReason {
 
     /** A playlist alarm played its list to the end and was set to keep vibrating. */
     PLAYLIST_ENDED,
+
+    /** The playlist was paused in Zengő itself (its notification, a call…), so the alarm vibrates. */
+    ZENGO_PAUSED,
 }
 
 sealed interface RingEvent {
@@ -46,6 +49,9 @@ sealed interface RingEvent {
     data class AudioUnavailable(val reason: SilentReason) : RingEvent
     data object Snooze : RingEvent
     data object Dismiss : RingEvent
+
+    /** Close the alarm but let the music keep playing (Zengő playlist alarms only). */
+    data object Continue : RingEvent
     data object Timeout : RingEvent
     data class Failure(val message: String) : RingEvent
 }
@@ -53,6 +59,9 @@ sealed interface RingEvent {
 sealed interface RingEffect {
     data object StartAudioCheck : RingEffect
     data object StopAudio : RingEffect
+
+    /** Leave the music playing in Zengő and let go of it (instead of [StopAudio]). */
+    data object HandOverAudio : RingEffect
     data object StartVibration : RingEffect
     data object StopVibration : RingEffect
     data object ShowRingUi : RingEffect
@@ -154,6 +163,17 @@ class AlarmStateMachine(private val vibrateWithHeadphones: Boolean) {
                     effects += RingEffect.CancelSnooze
                     effects += RingEffect.CompleteDismiss
                 }
+            }
+
+            // The alarm counts as dismissed; only the music is left running. The caller sends this
+            // only while a Zengő playlist is audibly playing.
+            RingEvent.Continue -> if (state.isRinging) {
+                state = RingState.DISMISSED
+                vibrating = false
+                effects += listOf(RingEffect.CancelTimeout, RingEffect.HandOverAudio, RingEffect.StopVibration)
+                effects += RingEffect.CompleteDismiss
+                effects += RingEffect.CloseRingUi
+                effects += RingEffect.StopService
             }
 
             RingEvent.Timeout -> if (state.isRinging) {

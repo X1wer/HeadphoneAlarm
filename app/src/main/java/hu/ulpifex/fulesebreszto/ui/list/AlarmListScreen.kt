@@ -73,6 +73,7 @@ import hu.ulpifex.fulesebreszto.ui.components.AppIcons
 import hu.ulpifex.fulesebreszto.ui.components.LoudRed
 import hu.ulpifex.fulesebreszto.ui.components.alarmFrame
 import androidx.compose.ui.draw.clip
+import hu.ulpifex.fulesebreszto.audio.HeadphoneStatusKind
 import hu.ulpifex.fulesebreszto.ui.components.HeadphoneStatusChip
 import hu.ulpifex.fulesebreszto.ui.theme.LocalStatusColors
 import hu.ulpifex.fulesebreszto.ui.theme.TimeTextStyle
@@ -136,7 +137,11 @@ fun AlarmListScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 110.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { HeadphoneStatusChip(state.headphones, Modifier.fillMaxWidth()) }
+            // Without headphones nothing is shown here (the "alarms will only vibrate" line was removed in
+            // 1.2.0: loud alarms ring anyway); a connected headset or a needed check is still shown.
+            if (state.headphones.kind != HeadphoneStatusKind.NONE) {
+                item { HeadphoneStatusChip(state.headphones, Modifier.fillMaxWidth()) }
+            }
             item {
                 val next = state.next
                 val title = if (next == null) {

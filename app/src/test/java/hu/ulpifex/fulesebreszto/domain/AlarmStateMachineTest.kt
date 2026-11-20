@@ -49,6 +49,23 @@ class AlarmStateMachineTest {
     }
 
     @Test
+    fun `continue ends the alarm but hands the music over instead of stopping it`() {
+        val m = ringing()
+        m.handle(RingEvent.AudioVerified("Fülhallgató"))
+        val effects = m.handle(RingEvent.Continue)
+        assertEquals(RingState.DISMISSED, m.state)
+        assertTrue(RingEffect.HandOverAudio in effects)
+        assertFalse(RingEffect.StopAudio in effects)
+        assertTrue(RingEffect.StopVibration in effects)
+        assertTrue(RingEffect.CompleteDismiss in effects)
+        assertTrue(RingEffect.StopService in effects)
+        assertFalse(RingEffect.ScheduleSnooze in effects)
+        // Repeated or late actions do nothing.
+        assertTrue(m.handle(RingEvent.Continue).isEmpty())
+        assertTrue(m.handle(RingEvent.Snooze).isEmpty())
+    }
+
+    @Test
     fun `no headphones means vibration only`() {
         val m = ringing()
         m.handle(RingEvent.AudioUnavailable(SilentReason.NO_HEADPHONES))

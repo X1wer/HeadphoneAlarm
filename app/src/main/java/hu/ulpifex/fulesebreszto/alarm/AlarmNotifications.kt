@@ -68,7 +68,11 @@ class AlarmNotifications(private val context: Context) : AlarmNotifier {
     fun initialRingNotification(): Notification =
         ringNotification(context.getString(R.string.app_name), text(R.string.notif_ring_checking))
 
-    fun ringNotification(title: String, body: String): Notification {
+    /**
+     * [canContinue]: a Zengő playlist is playing, so the alarm can also be closed with the music left
+     * on ("Keep listening", or swiping the notification away).
+     */
+    fun ringNotification(title: String, body: String, canContinue: Boolean = false): Notification {
         val fullScreen = PendingIntent.getActivity(
             context, REQ_RING_ACTIVITY,
             Intent(context, AlarmActivity::class.java)
@@ -92,14 +96,22 @@ class AlarmNotifications(private val context: Context) : AlarmNotifier {
             .setFullScreenIntent(fullScreen, true)
             .addAction(0, text(R.string.ring_dismiss), serviceAction(AlarmRingService.ACTION_DISMISS, REQ_DISMISS))
             .addAction(0, text(R.string.ring_snooze), serviceAction(AlarmRingService.ACTION_SNOOZE, REQ_SNOOZE))
+            .apply {
+                if (canContinue) {
+                    addAction(0, text(R.string.ring_continue), serviceAction(AlarmRingService.ACTION_CONTINUE, REQ_CONTINUE))
+                }
+            }
+            // Android 14+ lets the user swipe this notification away: with Zengő playing that means
+            // "close, keep the music"; otherwise the notification is shown again.
+            .setDeleteIntent(serviceAction(AlarmRingService.ACTION_NOTIFICATION_DISMISSED, REQ_NOTIFICATION_DISMISSED))
             .build()
     }
 
-    fun updateRing(alarmTime: String, label: String, status: String) {
+    fun updateRing(alarmTime: String, label: String, status: String, canContinue: Boolean = false) {
         if (!canPost()) return
         manager.notify(
             ID_RING,
-            ringNotification(text(R.string.notif_ring_title, alarmTime), text(R.string.notif_ring_text, label, status)),
+            ringNotification(text(R.string.notif_ring_title, alarmTime), text(R.string.notif_ring_text, label, status), canContinue),
         )
     }
 
@@ -193,5 +205,7 @@ class AlarmNotifications(private val context: Context) : AlarmNotifier {
         private const val REQ_DISMISS = 11
         private const val REQ_SNOOZE = 12
         private const val REQ_OPEN_APP = 13
+        private const val REQ_CONTINUE = 14
+        private const val REQ_NOTIFICATION_DISMISSED = 15
     }
 }

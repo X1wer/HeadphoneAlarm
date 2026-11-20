@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
@@ -43,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,9 +99,12 @@ fun AlarmRingScreen(
 ) {
     val density = LocalDensity.current
     val thresholdPx = with(density) { SWIPE_THRESHOLD.toPx() }
-    val detector = remember(thresholdPx) { SwipeGestureDetector(thresholdPx) }
+    // Sideways swipes count only while a Zengő playlist is playing (the music can then stay on).
+    val canContinue by rememberUpdatedState(ui?.canContinue == true)
+    val detector = remember(thresholdPx) { SwipeGestureDetector(thresholdPx, allowHorizontal = { canContinue }) }
     val scope = rememberCoroutineScope()
     val dragOffset = remember { Animatable(0f) }
+    val dragOffsetX = remember { Animatable(0f) }
     var hint by remember { mutableStateOf<SwipeAction?>(null) }
     var progress by remember { mutableFloatStateOf(0f) }
     var feedback by remember { mutableStateOf<String?>(null) }
@@ -107,16 +113,20 @@ fun AlarmRingScreen(
     val dismissedText = stringResource(R.string.ring_feedback_dismissed)
     val snoozedText = stringResource(R.string.ring_feedback_snoozed, snoozeMinutes)
     val timedOutText = stringResource(R.string.ring_feedback_timed_out)
+    val continuedText = stringResource(R.string.ring_feedback_continued)
     val swipeDescription = stringResource(R.string.ring_swipe_cd)
     val dismissLabel = stringResource(R.string.ring_dismiss)
     val snoozeLabel = stringResource(R.string.ring_snooze)
+    val continueLabel = stringResource(R.string.ring_continue)
     val fmt = rememberTimeFormat()
 
     fun trigger(action: SwipeAction) {
         if (feedback != null) return
+        if (action == SwipeAction.CONTINUE && !canContinue) return
         feedback = when (action) {
             SwipeAction.DISMISS -> dismissedText
             SwipeAction.SNOOZE -> snoozedText
+            SwipeAction.CONTINUE -> continuedText
         }
         onAction(action)
     }
@@ -129,6 +139,7 @@ fun AlarmRingScreen(
                 FinishKind.DISMISSED -> dismissedText
                 FinishKind.SNOOZED -> snoozedText
                 FinishKind.TIMED_OUT -> timedOutText
+                FinishKind.CONTINUED -> continuedText
             }
         }
         if (finished != null || feedback != null) {
@@ -175,20 +186,25 @@ fun AlarmRingScreen(
                         val p = detector.onMove(last.x, last.y)
                         hint = p.direction
                         progress = p.progress
-                        scope.launch { dragOffset.snapTo(p.dy.coerceIn(-thresholdPx * 1.3f, thresholdPx * 1.3f)) }
+                        val limit = thresholdPx * 1.3f
+                        val sideways = p.direction == SwipeAction.CONTINUE
+                        scope.launch { dragOffset.snapTo(if (sideways) 0f else p.dy.coerceIn(-limit, limit)) }
+                        scope.launch { dragOffsetX.snapTo(if (sideways) p.dx.coerceIn(-limit, limit) else 0f) }
                     }
                     val action = detector.onUp(last.x, last.y)
                     hint = null
                     progress = 0f
                     scope.launch { dragOffset.animateTo(0f, spring()) }
+                    scope.launch { dragOffsetX.animateTo(0f, spring()) }
                     if (action != null) trigger(action)
                 }
             }
             .semantics {
                 contentDescription = swipeDescription
-                customActions = listOf(
+                customActions = listOfNotNull(
                     CustomAccessibilityAction(dismissLabel) { trigger(SwipeAction.DISMISS); true },
                     CustomAccessibilityAction(snoozeLabel) { trigger(SwipeAction.SNOOZE); true },
+                    if (canContinue) CustomAccessibilityAction(continueLabel) { trigger(SwipeAction.CONTINUE); true } else null,
                 )
             },
     ) {
@@ -224,6 +240,14 @@ fun AlarmRingScreen(
                     maxLines = 2,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (ui?.inZengo == true) {
+                    Text(
+                        stringResource(R.string.ring_in_zengo),
+                        color = Color(0xFFB7C6D1),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
 
             // Gesture guidance (the whole screen accepts the gesture).
@@ -240,22 +264,39 @@ fun AlarmRingScreen(
                     active = hint == SwipeAction.DISMISS,
                     progress = if (hint == SwipeAction.DISMISS) progress else 0f,
                 )
-                Box(
-                    Modifier
-                        .graphicsLayer { translationY = dragOffset.value }
-                        .scale(if (hint == null) pulse else 1f + progress * 0.15f)
-                        .size(132.dp)
-                        .background(
-                            when {
-                                hint == SwipeAction.DISMISS && progress >= 1f -> Color(0xFF2E7D5B)
-                                hint == SwipeAction.SNOOZE && progress >= 1f -> Color(0xFF2B5C8A)
-                                else -> accent.copy(alpha = 0.22f)
-                            },
-                            CircleShape,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(AppIcons.Alarm, contentDescription = null, tint = Color.White, modifier = Modifier.size(64.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (canContinue) SideHint(left = true, active = hint == SwipeAction.CONTINUE, progress = progress)
+                    Box(
+                        Modifier
+                            .graphicsLayer {
+                                translationY = dragOffset.value
+                                translationX = dragOffsetX.value
+                            }
+                            .scale(if (hint == null) pulse else 1f + progress * 0.15f)
+                            .size(132.dp)
+                            .background(
+                                when {
+                                    hint == SwipeAction.DISMISS && progress >= 1f -> Color(0xFF2E7D5B)
+                                    hint == SwipeAction.SNOOZE && progress >= 1f -> Color(0xFF2B5C8A)
+                                    hint == SwipeAction.CONTINUE && progress >= 1f -> Color(0xFF6A4C93)
+                                    else -> accent.copy(alpha = 0.22f)
+                                },
+                                CircleShape,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(AppIcons.Alarm, contentDescription = null, tint = Color.White, modifier = Modifier.size(64.dp))
+                    }
+                    if (canContinue) SideHint(left = false, active = hint == SwipeAction.CONTINUE, progress = progress)
+                }
+                if (canContinue) {
+                    Text(
+                        stringResource(R.string.ring_swipe_sideways),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.alpha(if (hint == SwipeAction.CONTINUE) 0.6f + 0.4f * progress else 0.55f),
+                    )
                 }
                 DirectionHint(
                     up = false,
@@ -334,6 +375,19 @@ private fun AudioStatus(ui: RingUiState) {
             }
         }
     }
+}
+
+@Composable
+private fun SideHint(left: Boolean, active: Boolean, progress: Float) {
+    Icon(
+        if (left) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = null,
+        tint = Color(0xFFC9B3F2),
+        modifier = Modifier
+            .padding(horizontal = 8.dp)
+            .size(40.dp)
+            .alpha(if (active) 0.6f + 0.4f * progress else 0.55f),
+    )
 }
 
 @Composable

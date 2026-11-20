@@ -110,3 +110,23 @@ tesztzenéivel (`tools/generate_test_audio.py`, köztük egy szándékosan hibá
 | Kártyák: hangos + lista → vastag piros cikk-cakkos keret; fejhallgatós lista → zöld cikk-cakkos keret | **Sikeres** (képernyőképek) |
 | Magyar és angol felület az új részeken | **Sikeres** |
 | Nem tesztelt | valódi fejhallgatóval szóló listás ébresztés (az emulátornak nincs fejhallgatója), Android 10–16, hangos ébresztés „Ne zavarjanak” módban, a sima (nem listás) színes és piros keretes kártya külön képernyőképe |
+
+## 1.2.0 – a lista a Zengőben szól, oldalra húzás (2026-11-20)
+
+Eszköz: Android 17 (API 37) emulátor, a Zengő 1.8.0 debug változatával és a Zengő tesztzenéivel (Kedvencek:
+Rövid hang, Ismétlés teszt, Tavaszi szél). Valódi telefon és fejhallgató nem volt.
+
+| Teszt | Eredmény |
+|---|---|
+| Unit tesztek (új: oldalra húzás, `Continue` esemény) | **113/113 sikeres**; műszeres tesztek **14/14**; lint 0 hiba |
+| Főképernyő fejhallgató nélkül | **Sikeres**: a „Nincs fejhallgató – ébresztéskor csak rezgés” sor nem jelenik meg |
+| Hangos Zengő-listás ébresztés zárolt képernyőn | **Sikeres**: a Zengő a háttérből elindult (a rendszer a médiamunkamenet lejátszáskérésére engedte az előtérszolgáltatását), `USAGE_ALARM`, „A Zengőben szól”, oldalnyilak |
+| Oldalra húzás | **Sikeres**: az ébresztés bezárult (elvetettnek számít, következő: hétfő), a Zengő tovább szólt, médiahangfolyamon |
+| A lista vége („Zengő szerint” = ismétlés ki) | **Sikeres**: „A lista véget ért – csak rezgés”, az oldalra húzás felirata eltűnt |
+| Felfelé húzás | **Sikeres**: szolgáltatás leállt, nincs lejátszó, nincs rezgés |
+| Szundi középen, majd a szundi utáni csengetés | Először **hibás** (#12, a tartalék szólt) – javítva, utána **sikeres**: a Zengő ugyanannál a dalnál, a megállás helyétől folytatta (15,96 s → 19,6 s, 3–4 mp-cel a folytatás után) |
+| Értesítés, feloldott telefon („Újrakezdi a listát”) | **Sikeres**: Leállítás / Szundi / Zene tovább gomb; a Leállítás gomb leállította; az értesítés oldalra elhúzása = zene tovább |
+| Magyar ébresztőképernyő | **Sikeres** (képernyőkép): „Húzd oldalra: az ébresztés bezárul, a zene szól tovább”, „A Zengőben szól” |
+| Fejhallgatós Zengő-listás ébresztés fejhallgató nélkül | **Sikeres**: „Csak rezgés – nincs fejhallgató”, a Zengő el sem indult (0 lejátszó), nincs oldalra húzás |
+| Tartalék: a Zengő hibára fut | **Sikeres** (a #12 hiba közben): „the alarm plays the list itself”, a lista az ébresztőben szólt |
+| Nem tesztelt | fejhallgatós ébresztés valódi fejhallgatóval a Zengőben (útvonal-ellenőrzés, kihúzás közben), Android 10–16, régi (1.7.0) Zengővel a tartalék ága, valódi telefon |
